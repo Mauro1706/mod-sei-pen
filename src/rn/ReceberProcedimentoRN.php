@@ -525,6 +525,26 @@ class ReceberProcedimentoRN extends InfraRN
           $objPenProtocolo->setStrSinObteveRecusa('S');
           $objPenProtocoloBD = new ProtocoloBD($this->getObjInfraIBanco());
           $objPenProtocoloBD->alterar($objPenProtocolo);
+
+          // Atualizar Bloco para concluido parcialmente
+          $objTramiteEmBlocoProtocoloDTO = new TramitaEmBlocoProtocoloDTO();
+          $objTramiteEmBlocoProtocoloDTO->setDblIdProtocolo($objReceberTramiteRecusadoDTO->getNumIdProtocolo());
+          $objTramiteEmBlocoProtocoloDTO->setOrdNumId(InfraDTO::$TIPO_ORDENACAO_DESC);
+          $objTramiteEmBlocoProtocoloDTO->retDblIdProtocolo();
+          $objTramiteEmBlocoProtocoloDTO->retNumIdTramitaEmBloco();
+
+          $objTramitaEmBlocoProtocoloRN = new TramitaEmBlocoProtocoloRN();
+          $tramiteEmBlocoProtocolo = $objTramitaEmBlocoProtocoloRN->listar($objTramiteEmBlocoProtocoloDTO);
+
+          if ($tramiteEmBlocoProtocolo != null) {
+            $objTramiteEmBlocoDTO = new TramiteEmBlocoDTO();
+            $objTramiteEmBlocoDTO->setNumId($tramiteEmBlocoProtocolo[0]->getNumIdTramitaEmBloco());
+            $objTramiteEmBlocoDTO->setStrStaEstado(TramiteEmBlocoRN::$TE_CONCLUIDO_PARCIALMENTE);
+
+            $objTramiteEmBlocoRN = new TramiteEmBlocoRN();
+            $objTramiteEmBlocoRN->alterar($objTramiteEmBlocoDTO);
+          }
+
       }
 
         $this->gravarLogDebug("Notificando serviços do PEN sobre ciência da recusa do trâmite " . $numIdTramite, 2);
