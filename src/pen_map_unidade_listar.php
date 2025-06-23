@@ -4,13 +4,15 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 /**
  * Consulta os logs do estado do procedimento ao ser expedido
+ *
+ *
  */
 
 session_start();
 
 define('PEN_RECURSO_ATUAL', 'pen_map_unidade_listar');
 define('PEN_RECURSO_BASE', 'pen_map_unidade');
-define('PEN_PAGINA_TITULO', 'Mapeamento de Unidades');
+define('PEN_PAGINA_TITULO', 'Mapeamento de Unidade');
 define('PEN_PAGINA_GET_ID', 'id_unidade');
 
 
@@ -50,14 +52,14 @@ try {
 
             foreach($arrParam['hdnInfraItensSelecionados'] as $NumIdUnidade) {
 
-                $objPenUnidadeDTO->setNumIdUnidade($NumIdUnidade);
-                $objPenUnidadeRN->excluir($objPenUnidadeDTO);
+                  $objPenUnidadeDTO->setNumIdUnidade($NumIdUnidade);
+                  $objPenUnidadeRN->excluir($objPenUnidadeDTO);
             }
           }
           else {
 
-              $objPenUnidadeDTO->setNumIdUnidade($arrParam['hdnInfraItensSelecionados']);
-              $objPenUnidadeRN->excluir($objPenUnidadeDTO);
+                $objPenUnidadeDTO->setNumIdUnidade($arrParam['hdnInfraItensSelecionados']);
+                $objPenUnidadeRN->excluir($objPenUnidadeDTO);
           }
 
             $objPagina->adicionarMensagem(sprintf('%s foi excluido com sucesso.', PEN_PAGINA_TITULO), InfraPagina::$TIPO_MSG_AVISO);
@@ -67,23 +69,26 @@ try {
         }
         else {
 
-            throw new InfraException('Módulo do Tramita: Nenhum Registro foi selecionado para executar esta ação');
+            throw new InfraException('Nenhum Registro foi selecionado para executar esta ação');
         }
+          break;
 
       case PEN_RECURSO_BASE.'_listar':
           // Ação padrão desta tela
           break;
 
       default:
-          throw new InfraException('Módulo do Tramita: Ação não permitida nesta tela');
+          throw new InfraException('Ação não permitida nesta tela');
 
     }
   }
     //--------------------------------------------------------------------------
 
-    $arrComandos = [];
+    $arrComandos = array();
     $arrComandos[] = '<button type="button" accesskey="P" onclick="onClickBtnPesquisar();" id="btnPesquisar" value="Pesquisar" class="infraButton"><span class="infraTeclaAtalho">P</span>esquisar</button>';
     $arrComandos[] = '<button type="button" value="Novo" onclick="onClickBtnNovo()" class="infraButton"><span class="infraTeclaAtalho">N</span>ovo</button>';
+    //$arrComandos[] = '<button type="button" value="Ativar" onclick="onClickBtnAtivar()" class="infraButton">Ativar</button>';
+    //$arrComandos[] = '<button type="button" value="Desativar" onclick="onClickBtnDesativar()" class="infraButton">Desativar</button>';
     $arrComandos[] = '<button type="button" value="Excluir" onclick="onClickBtnExcluir()" class="infraButton"><span class="infraTeclaAtalho">E</span>xcluir</button>';
     $arrComandos[] = '<button type="button" accesskey="I" id="btnImprimir" value="Imprimir" onclick="infraImprimirTabela();" class="infraButton"><span class="infraTeclaAtalho">I</span>mprimir</button>';
 
@@ -137,7 +142,7 @@ try {
     $objPagina->processarPaginacao($objPenUnidadeDTOFiltro);
 
     $numRegistros = count($arrObjPenUnidadeDTO);
-  if(!empty($arrObjPenUnidadeDTO)) {
+  if(!empty($arrObjPenUnidadeDTO)){
 
       $strResultado = '';
 
@@ -147,7 +152,7 @@ try {
       $strResultado .= '<tr>';
       $strResultado .= '<th class="infraTh"></th>';
       $strResultado .= '<th class="infraTh" colspan="3">SEI</th>';
-      $strResultado .= '<th class="infraTh" colspan="3">Tramita GOV.BR</th>';
+      $strResultado .= '<th class="infraTh" colspan="3">Tramita.GOV.BR</th>';
       $strResultado .= '<th class="infraTh"></th>';
       $strResultado .= '</tr>';
 
@@ -178,6 +183,7 @@ try {
         $strResultado .= '<td>'.$objPenUnidadeDTO->getStrNomeUnidadeRH().'</td>';
         $strResultado .= '<td align="center">';
 
+        //$strResultado .= '<a href="'.$objSessao->assinarLink('controlador.php?acao='.PEN_RECURSO_BASE.'_visualizar&acao_origem='.$_GET['acao_origem'].'&acao_retorno='.htmlspecialchars($_GET['acao']).'&'.PEN_PAGINA_GET_ID.'='.$objPenUnidadeDTO->getNumIdUnidade()).'"><img src="imagens/consultar.gif" title="Consultar Mapeamento" alt="Consultar Mapeamento" class="infraImg"></a>';
       if($objSessao->verificarPermissao('pen_map_unidade_alterar')) {
         $strResultado .= '<a href="'.$objSessao->assinarLink('controlador.php?acao='.PEN_RECURSO_BASE.'_cadastrar&acao_origem='.htmlspecialchars($_GET['acao_origem']).'&acao_retorno='.htmlspecialchars($_GET['acao']).'&'.PEN_PAGINA_GET_ID.'='.$objPenUnidadeDTO->getNumIdUnidade()).'"><img src=' . ProcessoEletronicoINT::getCaminhoIcone("imagens/alterar.gif") . ' title="Alterar Mapeamento" alt="Alterar Mapeamento" class="infraImg"></a>';
       }
@@ -200,6 +206,7 @@ catch(InfraException $e){
     print_r($e);
     print '</pre>';
     exit(0);
+    //$objPagina->processarExcecao($e);
 }
 
 
@@ -268,6 +275,35 @@ function onClickBtnNovo(){
     window.location = '<?php print $objSessao->assinarLink('controlador.php?acao='.PEN_RECURSO_BASE.'_cadastrar&acao_origem='.htmlspecialchars($_GET['acao_origem']).'&acao_retorno='.htmlspecialchars($_GET['acao_origem'])); ?>';
 }
 
+function onClickBtnAtivar(){
+
+   try {
+
+        var form = jQuery('#frmAcompanharEstadoProcesso');
+        form.attr('action', '<?php print $objSessao->assinarLink('controlador.php?acao='.PEN_RECURSO_BASE.'_ativar&acao_origem='.htmlspecialchars($_GET['acao_origem']).'&acao_retorno='.PEN_RECURSO_BASE.'_listar'); ?>');
+        form.submit();
+    }
+    catch(e){
+
+        alert('Erro : ' + e.message);
+    }
+
+}
+
+function onClickBtnDesativar(){
+
+    try {
+
+        var form = jQuery('#frmAcompanharEstadoProcesso');
+        form.attr('action', '<?php print $objSessao->assinarLink('controlador.php?acao='.PEN_RECURSO_BASE.'_desativar&acao_origem='.htmlspecialchars($_GET['acao_origem']).'&acao_retorno='.PEN_RECURSO_BASE.'_listar'); ?>');
+        form.submit();
+    }
+    catch(e){
+
+        alert('Erro : ' + e.message);
+    }
+}
+
 function onClickBtnExcluir(){
 
     try {
@@ -298,27 +334,27 @@ function onClickBtnExcluir(){
 $objPagina->fecharHead();
 $objPagina->abrirBody(PEN_PAGINA_TITULO, 'onload="inicializar();"');
 ?>
-<form id="frmAcompanharEstadoProcesso" method="post" action="">
+<form id="frmAcompanharEstadoProcesso" method="post" action="<?php // print $objSessao->assinarLink($strProprioLink); ?>">
 
     <?php $objPagina->montarBarraComandosSuperior($arrComandos); ?>
     <?php //$objPagina->montarAreaValidacao(); ?>
     <?php $objPagina->abrirAreaDados('5em'); ?>
 
         <label for="txtSiglaUnidade" id="lblSiglaUnidade" class="infraLabelOpcional">Sigla:</label>
-        <input type="text" id="txtSiglaUnidade" name="txtSiglaUnidade" class="infraText"  value="<?php echo PaginaSEI::tratarHTML(htmlspecialchars(isset($_POST['sigla'])) ? htmlspecialchars($_POST['sigla']) : ''); ?>">
+        <input type="text" id="txtSiglaUnidade" name="txtSiglaUnidade" class="infraText"  value="<?= PaginaSEI::tratarHTML(htmlspecialchars(isset($_POST['sigla'])) ? htmlspecialchars($_POST['sigla']) : ''); ?>">
 
         <label for="txtDescricaoUnidade" id="lblDescricaoUnidade" class="infraLabelOpcional">Descrição:</label>
-        <input type="text" id="txtDescricaoUnidade" name="txtDescricaoUnidade" class="infraText" value="<?php echo PaginaSEI::tratarHTML(htmlspecialchars(isset($_POST['descricao'])) ? htmlspecialchars($_POST['descricao']) : ''); ?>">
+        <input type="text" id="txtDescricaoUnidade" name="txtDescricaoUnidade" class="infraText" value="<?= PaginaSEI::tratarHTML(htmlspecialchars(isset($_POST['descricao'])) ? htmlspecialchars($_POST['descricao']) : ''); ?>">
 
     <?php $objPagina->fecharAreaDados(); ?>
 
-    <?php if($numRegistros > 0) : ?>
+    <?php if($numRegistros > 0): ?>
         <?php $objPagina->montarAreaTabela($strResultado, $numRegistros); ?>
         <?php //$objPagina->montarAreaDebug(); ?>
-<?php else: ?>
+    <?php else: ?>
         <div style="clear:both;margin:2em"></div>
         <p>Nenhum mapeamento foi encontrado</p>
-<?php endif; ?>
+    <?php endif; ?>
 </form>
 <?php $objPagina->fecharBody(); ?>
 <?php $objPagina->fecharHtml(); ?>

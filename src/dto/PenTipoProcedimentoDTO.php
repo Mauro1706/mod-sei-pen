@@ -4,11 +4,9 @@
  */
 require_once DIR_SEI_WEB.'/SEI.php';
 
-class PenTipoProcedimentoDTO extends TipoProcedimentoDTO
-{
+class PenTipoProcedimentoDTO extends TipoProcedimentoDTO {
 
-  public function montar()
-    {
+  public function montar() {
      
       parent::montar();
         

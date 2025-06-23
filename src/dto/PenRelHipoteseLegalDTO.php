@@ -27,5 +27,6 @@ class PenRelHipoteseLegalDTO extends InfraDTO {
       $this->configurarPK('IdMap', InfraDTO::$TIPO_PK_NATIVA);
       $this->configurarFK('IdBarramento', 'md_pen_hipotese_legal', 'id_hipotese_legal');
 
+      //$this->configurarExclusaoLogica('Ativo', 'N');
   }
 }

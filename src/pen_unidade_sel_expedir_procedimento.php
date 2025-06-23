@@ -22,6 +22,11 @@ try {
 
     SessaoSEI::getInstance()->validarLink();
 
+
+
+// $objExpedirProcedimentosRN = new ExpedirProcedimentoRN();
+// $resultDadosHierarquia  = $objExpedirProcedimentosRN->consultarUnidadesHierarquia();
+
   switch ($_GET['acao']) {
 
     case 'pen_unidade_sel_expedir_procedimento':
@@ -29,7 +34,7 @@ try {
         break;
 
     default:
-        throw new InfraException("Módulo do Tramita: Ação '" . htmlspecialchars($_GET['acao']) . "' não reconhecida.");
+        throw new InfraException("Ação '" . htmlspecialchars($_GET['acao']) . "' não reconhecida.");
   }
 
     $arrComandos = array();
@@ -55,7 +60,7 @@ try {
     </header>
     <body>
 
-        <form id="frmUnidadeLista" method="post" action="<?php echo PaginaSEI::getInstance()->formatarXHTML(SessaoSEI::getInstance()->assinarLink('controlador.php?acao=' . htmlspecialchars($_GET['acao']) . '&acao_origem=' . htmlspecialchars($_GET['acao']))) ?>">
+        <form id="frmUnidadeLista" method="post" action="<?= PaginaSEI::getInstance()->formatarXHTML(SessaoSEI::getInstance()->assinarLink('controlador.php?acao=' . htmlspecialchars($_GET['acao']) . '&acao_origem=' . htmlspecialchars($_GET['acao']))) ?>">
 <?
 //PaginaSEI::getInstance()->montarBarraLocalizacao($strTitulo);
 PaginaSEI::getInstance()->montarBarraComandosSuperior($arrComandos);

@@ -1,22 +1,16 @@
 {
   "config": {
-    "vendor-dir": "./src/vendor",
+    "vendor-dir": "./vendor",
     "platform": {
-      "php": "8.2"
+      "php": "7.3.12"
     }
   },
-  "autoload-dev": {
-    "psr-4": {
-      "Tests\\": "sei/"
-    }
-  }, 
-  "require": {
-    "guzzlehttp/guzzle": "^7.0"
-  },
-      
   "require-dev": {
-    "pheromone/phpcs-security-audit": "*" ,
+    "php": "7.3.12",
+    "phpunit/phpunit": "*",
+    "squizlabs/php_codesniffer": "*",
+    "mockery/mockery": "^1.5",
     "phpcompatibility/php-compatibility": "^9.3",
-    "rector/rector": "^2.0"
-}
+    "pheromone/phpcs-security-audit": "*"
+  }
 }

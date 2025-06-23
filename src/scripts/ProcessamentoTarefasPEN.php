@@ -5,10 +5,9 @@ require_once $dirSeiWeb . '/SEI.php';
 
 class ProcessamentoTarefasPEN
 {
-  private static $instance;
+  private static $instance = null;
 
-  public static function getInstance()
-    {
+  public static function getInstance() {
     if (self::$instance == null) {
         self::$instance = new ProcessamentoTarefasPEN();
     }

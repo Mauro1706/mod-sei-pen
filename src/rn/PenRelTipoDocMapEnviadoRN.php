@@ -4,13 +4,11 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 class PenRelTipoDocMapEnviadoRN extends InfraRN
 {
-  public function __construct()
-    {
+  public function __construct() {
       parent::__construct();
   }
 
-  protected function inicializarObjInfraIBanco()
-    {
+  protected function inicializarObjInfraIBanco() {
       return BancoSEI::getInstance();
   }
 
@@ -18,6 +16,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
     /**
      * Lista mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN
      *
+     * @param PenRelTipoDocMapEnviadoDTO $parObjPenRelTipoDocMapEnviadoDTO
      * @return array
      */
   protected function listarConectado(PenRelTipoDocMapEnviadoDTO $parObjPenRelTipoDocMapEnviadoDTO)
@@ -27,7 +26,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD($this->getObjInfraIBanco());
         return $objPenRelTipoDocMapEnviadoBD->listar($parObjPenRelTipoDocMapEnviadoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro listando mapeamento de Tipos de Documento para envio.', $e);
+        throw new InfraException('Erro listando mapeamento de Tipos de Documento para envio.', $e);
     }
   }
 
@@ -37,20 +36,20 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD($this->getObjInfraIBanco());
         return $objPenRelTipoDocMapEnviadoBD->consultar($objPenRelTipoDocMapEnviadoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro consultando mapeamento de documentos para envio.', $e);
+        throw new InfraException('Erro consultando mapeamento de documentos para envio.', $e);
     }
   }
 
 
   protected function listarEmUsoConectado($dblIdSerie)
     {
-      $arrNumIdSerie = [];
+      $arrNumIdSerie = array();
       $objPenRelTipoDocMapRecebidoDTO = new PenRelTipoDocMapEnviadoDTO();
       $objPenRelTipoDocMapRecebidoDTO->retNumIdSerie();
       $objPenRelTipoDocMapRecebidoDTO->setDistinct(true);
       $objPenRelTipoDocMapRecebidoDTO->setOrdNumIdSerie(InfraDTO::$TIPO_ORDENACAO_ASC);
 
-      $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD($this->inicializarObjInfraIBanco());
+      $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD(BancoSEI::getInstance());
       $arrObjPenRelTipoDocMapRecebidoDTO = $objPenRelTipoDocMapEnviadoBD->listar($objPenRelTipoDocMapRecebidoDTO);
 
     if (!empty($arrObjPenRelTipoDocMapRecebidoDTO)) {
@@ -102,7 +101,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
     /**
      * Exclui lista de mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN
      *
-     * @param  PenRelTipoDocMapEnviadoDTO $parObjPenRelTipoDocMapEnviadoDTO
+     * @param PenRelTipoDocMapEnviadoDTO $parObjPenRelTipoDocMapEnviadoDTO
      * @return void
      */
   protected function excluirControlado($parArrObjPenRelTipoDocMapEnviadoDTO)
@@ -117,7 +116,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         $objPenRelTipoDocMapEnviadoBD->excluir($objPenRelTipoDocMapEnviadoDTO);
       }
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro excluindo Mapeamento de Tipos de Documento para envio.', $e);
+        throw new InfraException('Erro excluindo Mapeamento de Tipos de Documento para envio.', $e);
     }
   }
 
@@ -127,7 +126,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
     /**
      * Remove uma espécie documental da base de dados do SEI baseado em um código de espécie do Barramento
      *
-     * @param  int $parNumIdEspecieDocumentla
+     * @param int $parNumIdEspecieDocumentla
      * @return void
      */
   protected function excluirPorEspecieDocumentalControlado($parNumIdEspecieDocumental)
@@ -143,17 +142,17 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
       }
 
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro removendo Mapeamento de Tipos de Documento para envio pelo código de espécie.', $e);
+      throw new InfraException('Erro removendo Mapeamento de Tipos de Documento para envio pelo código de espécie.', $e);
     }
   }
 
   protected function contarConectado(PenRelTipoDocMapEnviadoDTO $parObjPenRelTipoDocMapEnviadoDTO)
     {
     try {
-        $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD($this->getObjInfraIBanco());
-        return $objPenRelTipoDocMapEnviadoBD->contar($parObjPenRelTipoDocMapEnviadoDTO);
+      $objPenRelTipoDocMapEnviadoBD = new PenRelTipoDocMapEnviadoBD($this->getObjInfraIBanco());
+      return $objPenRelTipoDocMapEnviadoBD->contar($parObjPenRelTipoDocMapEnviadoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro contando Mapeamento de Tipos de Documento para Envio.', $e);
+      throw new InfraException('Erro contando Mapeamento de Tipos de Documento para Envio.', $e);
     }
   }
 
@@ -175,11 +174,11 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
       $numPercentualSimilaridadeValido = 85;
 
       // Obter todas as espécies documentais do Barramento de Serviços do PEN
-      $arrEspeciesDocumentais = [];
+      $arrEspeciesDocumentais = array();
       $arrEspecies = $objTipoDocMapRN->listarParesEspecie();
     foreach ($arrEspecies as $numCodigo => $strItem) {
       foreach (preg_split('/\//', $strItem) as $strNomeEspecie) {
-        $arrEspeciesDocumentais[] = ["codigo" => $numCodigo, "nome" => $strNomeEspecie];
+        $arrEspeciesDocumentais[] = array("codigo" => $numCodigo, "nome" => $strNomeEspecie);
       }
     }
 
@@ -199,7 +198,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
 
           $numTamNomeEspecie = strlen($strNomeEspecieDocumental);
           $numPosEspacoAdicional = strpos($strNomeTipoDocumento, ' ', min($numTamNomeEspecie, $numTamNomeTipoDoc));
-        if($numPosEspacoAdicional) {
+        if($numPosEspacoAdicional){
           // Avaliação com tamanho reduzido, caso seja um termo composto
           $numTamanhoReducao = max($numTamNomeEspecie, $numPosEspacoAdicional);
           $strNomeTipoDocReduzido = substr($strNomeTipoDocumento, 0, $numTamanhoReducao);
@@ -218,11 +217,11 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         }
       }
 
-      if(isset($numMelhorSimilaridade)) {
+      if(isset($numMelhorSimilaridade)){
           // Realiza o mapeamento do tipo de documento com a espécie documental similar
           $objPenRelTipoDocMapEnviadoDTO = new PenRelTipoDocMapEnviadoDTO();
           $objPenRelTipoDocMapEnviadoDTO->setNumIdSerie($numIdTipoDocumento);
-        if($objPenRelTipoDocMapEnviadoRN->contar($objPenRelTipoDocMapEnviadoDTO) == 0) {
+        if($objPenRelTipoDocMapEnviadoRN->contar($objPenRelTipoDocMapEnviadoDTO) == 0){
             $objPenRelTipoDocMapEnviadoDTO->setNumCodigoEspecie($numIdEspecieSimilar);
             $objPenRelTipoDocMapEnviadoRN->cadastrar($objPenRelTipoDocMapEnviadoDTO);
         }
@@ -246,7 +245,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         $objEspecieDocumentalDTO->retDblIdEspecie();
         $objEspecieDocumentalDTO->setDblIdEspecie($strIdEspeciePadrao);
 
-        $objGenericoBD = new GenericoBD($this->inicializarObjInfraIBanco());
+        $objGenericoBD = new GenericoBD(BancoSEI::getInstance());
         $objEspecieDocumentalDTO = $objGenericoBD->consultar($objEspecieDocumentalDTO);
     }
 
@@ -265,7 +264,7 @@ class PenRelTipoDocMapEnviadoRN extends InfraRN
         $objPenParametroRN = new PenParametroRN();
         $objPenParametroRN->persistirParametro("PEN_ESPECIE_DOCUMENTAL_PADRAO_ENVIO", $parNumEspeciePadrao);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro atribuindo Espécie Documental padrão para envio.', $e);
+        throw new InfraException('Erro atribuindo Espécie Documental padrão para envio.', $e);
     }
   }
 

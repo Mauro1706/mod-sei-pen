@@ -114,6 +114,7 @@ class EditorSEI4RN extends InfraRN
     if ($objEditorDTO->getStrSinSomenteLeitura() == 'S') {
       $strInicializacao .= "CKEDITOR.config.readOnly=true;\n";
     }
+    //$ret->setStrCss($this->jsEncode($this->montarCssEditor(0)));
     $strInicializacao .= "</script>\n";
     $ret->setStrInicializacao($strInicializacao);
 
@@ -516,7 +517,7 @@ class EditorSEI4RN extends InfraRN
       $bolDesabilitarCorretor=false;
       if ($scayt != "") {
         $includePlugins[] = $scayt;
-        $objInfraParametro = new InfraParametro($this->inicializarObjInfraIBanco());
+        $objInfraParametro = new InfraParametro(BancoSEI::getInstance());
         $numTamanhoDesabilitarEditor=$objInfraParametro->getValor('SEI_TAM_MB_CORRETOR_DESABILITADO', false);
         if($numTamanhoDesabilitarEditor===null){
           $numTamanhoDesabilitarEditor=2;
@@ -609,7 +610,7 @@ class EditorSEI4RN extends InfraRN
       return $ret;
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro montando editor.', $e);
+      throw new InfraException('Erro montando editor.', $e);
     }
   }
 
@@ -627,7 +628,7 @@ class EditorSEI4RN extends InfraRN
       $arrObjSecaoModeloDTO=$objSecaoModeloRN->listar($objSecaoModeloDTO);
 
       if(count($arrObjSecaoModeloDTO)===0){
-        throw new InfraException('Módulo do Tramita: Modelo de documento não possui seções.');
+        throw new InfraException('Modelo de documento não possui seções.');
       }
 
       $strConteudoCss = $this->montarCssEditor(null);
@@ -735,7 +736,7 @@ class EditorSEI4RN extends InfraRN
       return $ret;
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro montando editor.', $e);
+      throw new InfraException('Erro montando editor.', $e);
     }
   }
   public function jsEncode($val)
@@ -811,7 +812,9 @@ class EditorSEI4RN extends InfraRN
   public function filtrarTags($strConteudo)
   {
     $strConteudo = preg_replace("%<font[^>]*>%si", "", $strConteudo);
+    //$strConteudo = preg_replace("%<span style=\"[^(color|backgroung)][^>]*>%si", "", $strConteudo);
     $strConteudo = preg_replace("%</font>%si", "", $strConteudo);
+    //$strConteudo = preg_replace("%</span>%si", "", $strConteudo);
     return str_replace(array('<o:p>', '</o:p>'), '', $strConteudo);
   }
 
@@ -820,13 +823,17 @@ class EditorSEI4RN extends InfraRN
   {
     try {
 
+      //$objParametrosEditorDTO = $this->obterParametros($parObjEditorDTO);
+
       self::$arrTags = array();
       self::$arrTags['versao'] = 1;
 
       $objSecaoModeloRN = new SecaoModeloRN();
       $objSecaoDocumentoRN = new SecaoDocumentoRN();
       $objVersaoSecaoDocumentoRN = new VersaoSecaoDocumentoRN();
+      //$objRelSecaoModeloEstiloRN = new RelSecaoModeloEstiloRN();
       $objDocumentoRN = new DocumentoRN();
+      //$objSerieRN = new SerieRN();
       $dthAtual = InfraData::getStrDataHoraAtual();
 
       $parObjEditorDTO->setNumIdConjuntoEstilos(null);
@@ -906,7 +913,7 @@ class EditorSEI4RN extends InfraRN
         $arrObjSecaoModeloDTO = $objSecaoModeloRN->listar($objSecaoModeloDTO);
 
         if (count($arrObjSecaoModeloDTO) == 0) {
-          throw new InfraException('Módulo do Tramita: Modelo do documento não contém seções.');
+          throw new InfraException('Modelo do documento não contém seções.');
         }
 
 
@@ -1022,6 +1029,7 @@ class EditorSEI4RN extends InfraRN
             } else {
 
               //efetua limpeza de tags para documentos gerados com conteudo inicial
+              //$strConteudo = $this->limparTagsCriticas($strConteudo);
               $this->validarTagsCriticas($arrImagemPermitida, $strConteudo);
               $strConteudo = $this->processarLinksSei($strConteudo);
 
@@ -1172,10 +1180,11 @@ class EditorSEI4RN extends InfraRN
       }
 
       //cadastrar conjunto de estilos
+      //print_r($parObjEditorDTO); die;
       $this->atualizarConteudo($parObjEditorDTO);
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro gerando versão inicial documento.', $e);
+      throw new InfraException('Erro gerando versão inicial documento.', $e);
     }
   }
 
@@ -1192,7 +1201,7 @@ class EditorSEI4RN extends InfraRN
 
           //LogSEI::getInstance()->gravar(InfraException::inspecionar($e)."\n\n".file_get_contents(DIR_SEI_TEMP.'/'.$parObjEditorDTO->getStrArquivoComparacaoXss()));
 
-          throw new InfraException('Módulo do Tramita: COMPARACAO '.SessaoSEI::getInstance()->assinarLink('controlador.php?acao=exibir_arquivo&nome_arquivo='.$parObjEditorDTO->getStrArquivoComparacaoXss().'&original=1'));
+          throw new InfraException('COMPARACAO '.SessaoSEI::getInstance()->assinarLink('controlador.php?acao=exibir_arquivo&nome_arquivo='.$parObjEditorDTO->getStrArquivoComparacaoXss().'&original=1'));
         }
       }
 
@@ -1355,7 +1364,7 @@ class EditorSEI4RN extends InfraRN
       $arrObjSecaoDocumentoDTO = $parObjEditorDTO->getArrObjSecaoDocumentoDTO();
 
       if (InfraArray::contar($arrObjSecaoDocumentoDTO)==0) {
-        throw new InfraException('Módulo do Tramita: Documento sem seções.');
+        throw new InfraException('Documento sem seções.');
       }
 
       $objSecaoDocumentoDTO = new SecaoDocumentoDTO();
@@ -1379,9 +1388,9 @@ class EditorSEI4RN extends InfraRN
 
       if ($numSecoesDocumentoBanco!=$numSecoesDocumento) {
         if ($numSecoesDocumentoBanco > $numSecoesDocumento){
-          throw new InfraException('Módulo do Tramita: Conteúdo do documento incompleto.');
+          throw new InfraException('Conteúdo do documento incompleto.');
         }else {
-          throw new InfraException('Módulo do Tramita: Número de seções do documento inconsistente.');
+          throw new InfraException('Número de seções do documento inconsistente.');
         }
       }
 
@@ -1399,9 +1408,18 @@ class EditorSEI4RN extends InfraRN
           }
         }
         if ($j==$numSecoesDocumento) {
-          throw new InfraException('Módulo do Tramita: Seção [' . $arrObjSecaoDocumentoDTOBanco[$i]->getNumIdSecaoModelo() . '] do documento não encontrada.');
+          throw new InfraException('Seção [' . $arrObjSecaoDocumentoDTOBanco[$i]->getNumIdSecaoModelo() . '] do documento não encontrada.');
         }
       }
+
+//      self::$arrTags = null;
+//      foreach ($arrObjSecaoDocumentoDTO as $objSecaoDocumentoDTO) {
+//        if ($objSecaoDocumentoDTO->getStrSinDinamica()=='S') {
+//          $objParametrosEditorDTO = $this->obterParametros($parObjEditorDTO);
+//          $arrTags = $objParametrosEditorDTO->getArrTags();
+//          break;
+//        }
+//      }
 
       //bloquear registros de versão
       $objVersaoSecaoDocumentoDTO = new VersaoSecaoDocumentoDTO();
@@ -1429,7 +1447,7 @@ class EditorSEI4RN extends InfraRN
       }
 
       if (count($arrObjVersaoSecaoDocumentoDTO)!=$numSecoesDocumento) {
-        throw new InfraException('Módulo do Tramita: Número de seções da última versão não corresponde ao número de seções do documento.');
+        throw new InfraException('Número de seções da última versão não corresponde ao número de seções do documento.');
       }
 
       if ($parObjEditorDTO->isSetNumVersao() && $parObjEditorDTO->getNumVersao()!=$numVersao) {
@@ -1520,7 +1538,7 @@ class EditorSEI4RN extends InfraRN
       return $numVersao;
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro adicionando versão do documento.', $e);
+      throw new InfraException('Erro adicionando versão do documento.', $e);
     }
   }
 
@@ -1625,7 +1643,7 @@ class EditorSEI4RN extends InfraRN
         $objConjuntoEstilosDTO->setStrSinUltimo('S');
         $objConjuntoEstilosDTO->retNumIdConjuntoEstilos();
         $objConjuntoEstilosDTO = $objConjuntoEstilosRN->consultar($objConjuntoEstilosDTO);
-        if ($objConjuntoEstilosDTO==null) { throw new InfraException('Módulo do Tramita: Erro consultando conjunto de estilos.');
+        if ($objConjuntoEstilosDTO==null) { throw new InfraException('Erro consultando conjunto de estilos.');
         }
         $arrEstilos = $this->getArrayCss($objConjuntoEstilosDTO->getNumIdConjuntoEstilos());
         $parObjEditorDTO->setNumIdConjuntoEstilos($objConjuntoEstilosDTO->getNumIdConjuntoEstilos());
@@ -1638,7 +1656,7 @@ class EditorSEI4RN extends InfraRN
         ///////
       }
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro convertendo documento.', $e);
+      throw new InfraException('Erro convertendo documento.', $e);
     }
 
     if ($parObjEditorDTO->getDblIdDocumento()!=null) {
@@ -1659,7 +1677,9 @@ class EditorSEI4RN extends InfraRN
   public function converteTextoEstiloCss($arrEstilosCss, $strConteudo)
   {
 
+    //print_r($strConteudo);
     $strConteudoNovo = "";
+//    $posAtual = 0;
     $posAnterior = 0;
     $cntNaoEncontrados = 0;
     $cntEncontrados = 0;
@@ -1668,7 +1688,7 @@ class EditorSEI4RN extends InfraRN
       $strConteudoNovo .= substr($strConteudo, $posAnterior, $posAtual - $posAnterior);
       $posFimEstilo = strpos($strConteudo, '"', $posAtual + 7);
       if ($posFimEstilo===false) {
-        throw new InfraException('Módulo do Tramita: Erro localizando fim do estilo.');
+        throw new InfraException('Erro localizando fim do estilo.');
       } else if ($posFimEstilo==$posAtual + 7) {
         $posAnterior = $posAtual + 8;
       } else {
@@ -1770,7 +1790,7 @@ class EditorSEI4RN extends InfraRN
       }
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro atualizando conteúdo.', $e);
+      throw new InfraException('Erro atualizando conteúdo.', $e);
     }
   }
 
@@ -1816,6 +1836,9 @@ class EditorSEI4RN extends InfraRN
     $html .= '<a onclick="alert(\'' . PaginaSEI::getInstance()->formatarParametrosJavaScript($strNomeUsuarioVersao) . '\')" alt="' . $strNomeUsuarioVersao . '" title="' . $strNomeUsuarioVersao . '" style="color:#0066cc;text-decoration:none;cursor:pointer;">' . $strSiglaUsuarioVersao . '</a>';
     $html .= ' em ' . $dthVersao . '.' . "\n";
 
+//    $html = '<hr style="border:1px solid #c0c0c0;" />';
+//    $html .= 'Criado por  '. $strSiglaUsuarioGerador . ', versão ' . $numVersao . ' por '.$strSiglaUsuarioVersao . ' em ' . $dthVersao . '.' . "\n";
+
     return $html;
   }
 
@@ -1852,7 +1875,7 @@ class EditorSEI4RN extends InfraRN
       $objDocumentoDTO = $objDocumentoRN->consultarRN0005($objDocumentoDTO);
 
       if ($objDocumentoDTO==null) {
-        throw new InfraException('Módulo do Tramita: Documento não encontrado.');
+        throw new InfraException('Documento não encontrado.');
       }
 
       $dblIdProcedimento=$objDocumentoDTO->getDblIdProcedimento();
@@ -1877,7 +1900,7 @@ class EditorSEI4RN extends InfraRN
       $objBaseConhecimentoDTO = $objBaseConhecimentoRN->consultar($objBaseConhecimentoDTO);
 
       if ($objBaseConhecimentoDTO==null) {
-        throw new InfraException('Módulo do Tramita: Base de conhecimento não encontrada.');
+        throw new InfraException('Base de conhecimento não encontrada.');
       }
 
       if ($objBaseConhecimentoDTO->getNumIdConjuntoEstilos()!=null) {
@@ -2065,6 +2088,8 @@ class EditorSEI4RN extends InfraRN
     if ($parObjEditorDTO->isSetStrSinProcessarLinks() && $parObjEditorDTO->getStrSinProcessarLinks()=='S') {
 
       $strHtml=$this->processarLinksSei($strHtml);
+//      $strHtml=preg_replace(self::$REGEXP_LINK_ASSINADO,'$4',$strHtml);
+
       $strHtml=$this->assinarLinksSei($strHtml, $dblIdProcedimento);
       $strHtml=$this->assinarLinkFederacao($strHtml);
 
@@ -2116,7 +2141,7 @@ class EditorSEI4RN extends InfraRN
       $objDocumentoDTO = $objDocumentoRN->consultarRN0005($objDocumentoDTO);
 
       if ($objDocumentoDTO==null) {
-        throw new InfraException('Módulo do Tramita: Documento não encontrado.');
+        throw new InfraException('Documento não encontrado.');
       }
 
       $dblIdProcedimento = $objDocumentoDTO->getDblIdProcedimento();
@@ -2142,7 +2167,7 @@ class EditorSEI4RN extends InfraRN
       $objBaseConhecimentoDTO = $objBaseConhecimentoRN->consultar($objBaseConhecimentoDTO);
 
       if ($objBaseConhecimentoDTO==null) {
-        throw new InfraException('Módulo do Tramita: Base de conhecimento não encontrada.');
+        throw new InfraException('Base de conhecimento não encontrada.');
       }
 
       if ($objBaseConhecimentoDTO->getNumIdConjuntoEstilos()!=null) {
@@ -2249,6 +2274,7 @@ class EditorSEI4RN extends InfraRN
     if ($parObjEditorDTO->isSetStrSinProcessarLinks() && $parObjEditorDTO->getStrSinProcessarLinks()=='S') {
 
       $strHtml=$this->processarLinksSei($strHtml);
+//      $strHtml=preg_replace(self::$REGEXP_LINK_ASSINADO,'$4',$strHtml);
 
       $strHtml=$this->assinarLinksSei($strHtml, $dblIdProcedimento);
       $strHtml=$this->assinarLinkFederacao($strHtml);
@@ -2774,6 +2800,15 @@ class EditorSEI4RN extends InfraRN
         $objUnidadeDTO->retStrTimbreOrgao();
         $objUnidadeDTO->retStrSitioInternetOrgaoContato();
 
+        //$objUnidadeDTO->retStrEnderecoContato();
+        //$objUnidadeDTO->retStrComplementoContato();
+        //$objUnidadeDTO->retStrNomeCidadeContato();
+        //$objUnidadeDTO->retStrBairroContato();
+        //$objUnidadeDTO->retStrTelefoneFixoContato();
+        //$objUnidadeDTO->retStrTelefoneCelularContato();
+        //$objUnidadeDTO->retStrCepContato();
+        //$objUnidadeDTO->retStrSiglaUfContato();
+
 
         $objUnidadeDTO->setNumIdUnidade(self::$arrTags['#numIdUnidadeResponsavel']);
 
@@ -2781,7 +2816,7 @@ class EditorSEI4RN extends InfraRN
         $objUnidadeDTO = $objUnidadeRN->consultarRN0125($objUnidadeDTO);
 
         if ($objUnidadeDTO==null){
-          throw new InfraException('Módulo do Tramita: Unidade não encontrada.');
+          throw new InfraException('Unidade não encontrada.');
         }
 
         $objContatoDTO = new ContatoDTO();
@@ -2797,7 +2832,7 @@ class EditorSEI4RN extends InfraRN
         $arrObjContatoDTOUnidade = $objContatoRN->listarComEndereco($objContatoDTO);
 
         if (count($arrObjContatoDTOUnidade)==0){
-          throw new InfraException('Módulo do Tramita: Contato associado com a unidade não encontrado.');
+          throw new InfraException('Contato associado com a unidade não encontrado.');
         }
 
         $objContatoDTO = $arrObjContatoDTOUnidade[0];
@@ -2825,7 +2860,7 @@ class EditorSEI4RN extends InfraRN
         self::$arrTags['endereco_unidade'] = $objContatoDTO->getStrEndereco();
 
         if (InfraString::isBolVazia(self::$arrTags['endereco_unidade'])) {
-          throw new InfraException('Módulo do Tramita: Unidade ' . $objUnidadeDTO->getStrSigla() . ' não possui endereço cadastrado.', null, null, true, InfraLog::$AVISO);
+          throw new InfraException('Unidade ' . $objUnidadeDTO->getStrSigla() . ' não possui endereço cadastrado.', null, null, true, InfraLog::$AVISO);
         }
 
         self::$arrTags['cep_unidade'] = 'CEP ' . $objContatoDTO->getStrCep();
@@ -2917,13 +2952,13 @@ class EditorSEI4RN extends InfraRN
             if (($arrModulo = $seiModulo->executar('processarVariaveisEditor', $objDocumentoAPI))!=null){
               foreach ($arrModulo as $strVariavel => $strValor) {
                 if(isset(self::$arrTags[$strVariavel])) {
-                  throw new InfraException('Módulo do Tramita: Tentativa de sobrescrever variavel [' . $strVariavel . '] no módulo ' . $seiModulo->getNome());
+                  throw new InfraException('Tentativa de sobrescrever variavel [' . $strVariavel . '] no módulo ' . $seiModulo->getNome());
                 }
                 if(!isset($arrVariaveisModulo[$strVariavel])){
-                  throw new InfraException('Módulo do Tramita: Variável [' . $strVariavel . '] não relacionada no módulo ' . $seiModulo->getNome());
+                  throw new InfraException('Variável [' . $strVariavel . '] não relacionada no módulo ' . $seiModulo->getNome());
                 }
                 if(preg_match(EditorRN::$REGEXP_VARIAVEL_EDITOR, $strVariavel)!==1){
-                  throw new InfraException('Módulo do Tramita: Tentativa de definir variavel inválida [' . $strVariavel . '] no módulo ' . $seiModulo->getNome());
+                  throw new InfraException('Tentativa de definir variavel inválida [' . $strVariavel . '] no módulo ' . $seiModulo->getNome());
                 }
                 self::$arrTags[$strVariavel]=$strValor;
               }
@@ -3118,7 +3153,7 @@ class EditorSEI4RN extends InfraRN
       }
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro obtendo parâmetros do editor.', $e);
+      throw new InfraException('Erro obtendo parâmetros do editor.', $e);
     }
   }
 
@@ -3150,7 +3185,7 @@ class EditorSEI4RN extends InfraRN
         $objDocumentoDTO = $objDocumentoRN->consultarRN0005($objDocumentoDTO);
 
         if ($objDocumentoDTO==null) {
-          throw new InfraException('Módulo do Tramita: Documento não encontrado.');
+          throw new InfraException('Documento não encontrado.');
         }
       }
 
@@ -3194,7 +3229,7 @@ class EditorSEI4RN extends InfraRN
       $this->adicionarVersao($objEditorDTO);
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro recuperando versão.', $e);
+      throw new InfraException('Erro recuperando versão.', $e);
     }
   }
 
@@ -3319,6 +3354,7 @@ class EditorSEI4RN extends InfraRN
    */
   private function validarLink($matches)
   {
+//    LogSEI::getInstance()->gravar('M3='.$matches[3].'  - '.SessaoSEI::getInstance()->getNumIdSistema());
     if($matches[3]!=SessaoSEI::getInstance()->getNumIdSistema()){
       return $matches[0];
     }
@@ -3516,13 +3552,13 @@ class EditorSEI4RN extends InfraRN
       return null;
 
     } catch (Exception $e) {
-      throw new InfraException('Módulo do Tramita: Erro obtendo número da última versão.', $e);
+      throw new InfraException('Erro obtendo número da última versão.', $e);
     }
   }
 
   protected function recuperarLinkAcessoExternoControlado(DocumentoDTO $parObjDocumentoDTO){
     try {
-      $objInfraParametro = new InfraParametro($this->inicializarObjInfraIBanco());
+      $objInfraParametro = new InfraParametro(BancoSEI::getInstance());
       $objUsuarioDTO = new UsuarioDTO();
       $objUsuarioDTO->retNumIdContato();
       $objUsuarioDTO->setNumIdUsuario($objInfraParametro->getValor('ID_USUARIO_SEI'));
@@ -3576,7 +3612,7 @@ class EditorSEI4RN extends InfraRN
       return $ret;
 
     }catch(Exception $e){
-      throw new InfraException('Módulo do Tramita: Erro gerando link de acesso externo.', $e);
+      throw new InfraException('Erro gerando link de acesso externo.', $e);
     }
 
   }

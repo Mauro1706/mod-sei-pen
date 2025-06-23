@@ -4,39 +4,28 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 class PENAgendamentoRN extends InfraRN
 {
-  protected function inicializarObjInfraIBanco()
-    {
+  protected function inicializarObjInfraIBanco() {
       return BancoSEI::getInstance();
   }
 
     /**
      * Atualização das hipóteses legais vindas do barramento
-     *
      * @throws InfraException
      */
+
   protected function atualizarHipotesesLegaisControlado()
     {
     try {
         $objBD = new PenHipoteseLegalBD($this->inicializarObjInfraIBanco());
         $processoEletronicoRN = new ProcessoEletronicoRN();
         $hipotesesPen = $processoEletronicoRN->consultarHipotesesLegais();
-        $hipotesesPenDesativadas = $processoEletronicoRN->consultarHipotesesLegais(false);
 
-        $hipoteses = [];
-      if (!empty($hipotesesPen) && !empty($hipotesesPen->hipotesesLegais)) {
-        $hipoteses = $hipotesesPen->hipotesesLegais;
-      }
-
-      if (!empty($hipotesesPenDesativadas) && !empty($hipotesesPenDesativadas->hipotesesLegais)) {
-          $hipoteses = array_merge($hipoteses, $hipotesesPenDesativadas->hipotesesLegais);
-      }
-
-      if(empty($hipoteses)) {
-          throw new InfraException('Módulo do Tramita: Não foi possível obter as hipóteses legais dos serviços de integração');
+      if(empty($hipotesesPen)){
+        throw new InfraException('Não foi possível obter as hipóteses legais dos serviços de integração');
       }
 
         //Para cada hipótese vinda do PEN será verificado a existencia.
-      foreach ($hipoteses as $hipotese) {
+      foreach ($hipotesesPen->hipotesesLegais->hipotese as $hipotese) {
 
           $objDTO = new PenHipoteseLegalDTO();
           $objDTO->setNumIdentificacao($hipotese->identificacao);
@@ -47,10 +36,10 @@ class PENAgendamentoRN extends InfraRN
 
           //Caso não haja um nome para a hipótese legal, ele pula para a próxima.
         if (empty($hipotese->nome)) {
-            continue;
+          continue;
         }
 
-          $objDTO->setStrNome(mb_convert_encoding($hipotese->nome, 'ISO-8859-1', 'UTF-8'));
+          $objDTO->setStrNome(utf8_decode($hipotese->nome));
 
         if ($hipotese->status) {
             $objDTO->setStrAtivo('S');
@@ -60,6 +49,7 @@ class PENAgendamentoRN extends InfraRN
 
           //Caso não exista a hipótese irá cadastra-la no sei.
         if (empty($objConsulta)) {
+
             $objBD->cadastrar($objDTO);
         } else {
             //Caso contrário apenas irá atualizar os dados.
@@ -68,9 +58,9 @@ class PENAgendamentoRN extends InfraRN
         }
       }
 
-        LogSEI::getInstance()->gravar("Hipóteses Legais do Tramita GOV.BR atualizadas com sucesso.", LogSEI::$INFORMACAO);
+        LogSEI::getInstance()->gravar("Hipóteses Legais do PEN atualizadas com sucesso.", LogSEI::$INFORMACAO);
     } catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro no agendamento das Hipóteses Legais', $e);
+        throw new InfraException('Erro no agendamento das Hipóteses Legais', $e);
     }
   }
 
@@ -91,7 +81,7 @@ class PENAgendamentoRN extends InfraRN
         $arrEspeciesDocumentaisPEN = $processoEletronicoRN->consultarEspeciesDocumentais();
 
         // Obtém lista de espécies documentais registradas na base de dados do SEI
-        $objGenericoBD = new GenericoBD($this->inicializarObjInfraIBanco());
+        $objGenericoBD = new GenericoBD(BancoSEI::getInstance());
         $objEspecieDocumentalDTO = new EspecieDocumentalDTO();
         $objEspecieDocumentalDTO->retDblIdEspecie();
         $objEspecieDocumentalDTO->retStrNomeEspecie();
@@ -109,14 +99,14 @@ class PENAgendamentoRN extends InfraRN
         $objEspecieDocumentalDTO = new EspecieDocumentalDTO();
         $objEspecieDocumentalDTO->setDblIdEspecie($numIdEspecie);
 
-        if($bolExisteBarramento && !$bolExisteBaseDados) {
+        if($bolExisteBarramento && !$bolExisteBaseDados){
             // Caso a espécie documental EXISTA no Barramento do PEN mas não exista no SEI, necessário fazer o seu cadastramento
           if ($objGenericoBD->contar($objEspecieDocumentalDTO) == 0) {
             $objEspecieDocumentalDTO->setDblIdEspecie($numIdEspecie);
             $objEspecieDocumentalDTO->setStrNomeEspecie($strNomeEspecie);
             $objGenericoBD->cadastrar($objEspecieDocumentalDTO);
           }
-        } elseif(!$bolExisteBarramento && $bolExisteBaseDados) {
+        } elseif(!$bolExisteBarramento && $bolExisteBaseDados){
             // Caso a espécie documental NÂO exista no Barramento do PEN mas exista no SEI, necessário fazer a sua desativação
           if ($objGenericoBD->contar($objEspecieDocumentalDTO) > 0) {
                 // Remove mapeamentos de Tipos de Documentos para Envio vinculados ao código de espécie
@@ -142,15 +132,14 @@ class PENAgendamentoRN extends InfraRN
         }
       }
 
-        LogSEI::getInstance()->gravar("Espécies Documentais do Tramita GOV.BR atualizadas com sucesso.", LogSEI::$INFORMACAO);
+        LogSEI::getInstance()->gravar("Espécies Documentais do PEN atualizadas com sucesso.", LogSEI::$INFORMACAO);
     } catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro no agendamento de atualização de Hipóteses Legais', $e);
+        throw new InfraException('Erro no agendamento de atualização de Hipóteses Legais', $e);
     }
   }
 
     /**
      * Atualização de dados do Barramento de Serviços do PEN para utilização pelo SEI nas configurações
-     *
      * @throws InfraException
      */
   protected function atualizarInformacoesPENControlado()
@@ -161,9 +150,7 @@ class PENAgendamentoRN extends InfraRN
       InfraDebug::getInstance()->limpar();
 
     try {
-      if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()) {
-        return false;
-      }
+        PENIntegracao::verificarCompatibilidadeConfiguracoes();
 
         $this->atualizarHipotesesLegais();
         $this->atualizarEspeciesDocumentais();
@@ -180,7 +167,7 @@ class PENAgendamentoRN extends InfraRN
         InfraDebug::getInstance()->setBolDebugInfra(false);
         InfraDebug::getInstance()->setBolEcho(false);
 
-        throw new InfraException('Módulo do Tramita: Erro processamento atualização de informações do Barramento de Serviços do PEN.', $e);
+        throw new InfraException('Erro processamento atualização de informações do Barramento de Serviços do PEN.', $e);
     }
   }
 
@@ -190,7 +177,7 @@ class PENAgendamentoRN extends InfraRN
      *
      * @return void
      */
-  public function processarTarefasRecebimentoPEN($arrParametros)
+  public function processarTarefasPEN($arrParametros)
     {
       InfraDebug::getInstance()->setBolLigado(true);
       InfraDebug::getInstance()->setBolDebugInfra(false);
@@ -198,9 +185,7 @@ class PENAgendamentoRN extends InfraRN
       InfraDebug::getInstance()->limpar();
 
     try {
-      if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()) {
-        return false;
-      }
+        PENIntegracao::verificarCompatibilidadeConfiguracoes();
 
         $bolDebugAtivo = array_key_exists('debug', $arrParametros) && $arrParametros['debug'][0] != false;
         $bolMonitoramentoAtivado = array_key_exists('monitorar', $arrParametros) && $arrParametros['monitorar'][0] != false;
@@ -215,67 +200,22 @@ class PENAgendamentoRN extends InfraRN
         $bolExecutarEmSegundoPlano = !empty(trim(@$arrObjGearman["Servidor"] ?: null));
 
         // Inicializa workers do Gearman caso este componente esteja configurado e não desativado no agendamento do sistema
-      if($bolAtivaWorker && $bolExecutarEmSegundoPlano) {
-          ProcessarPendenciasRN::inicializarWorkers($numValorWorkers);
+      if($bolAtivaWorker && $bolExecutarEmSegundoPlano){
+        ProcessarPendenciasRN::inicializarWorkers($numValorWorkers);
       }
 
         // Faz uma requisição para o controlador do sistema
-        PendenciasTramiteRN::inicializarMonitoramentoRecebimentoPendencias($numValorWorkers, $bolMonitoramentoAtivado, $bolExecutarEmSegundoPlano, $bolDebugAtivo);
+        PendenciasTramiteRN::inicializarMonitoramentoPendencias($numValorWorkers, $bolMonitoramentoAtivado, $bolExecutarEmSegundoPlano, $bolDebugAtivo);
 
     }catch(Exception $e){
         InfraDebug::getInstance()->setBolLigado(false);
         InfraDebug::getInstance()->setBolDebugInfra(false);
         InfraDebug::getInstance()->setBolEcho(false);
 
-        throw new InfraException('Módulo do Tramita: Erro processando pendências de trâmites do Barramento de Serviços do PEN.', $e);
+        throw new InfraException('Erro processando pendências de trâmites do Barramento de Serviços do PEN.', $e);
     }
   }
 
-    /**
-     * Processa tarefas recebidas pelo Barramento de Serviços do PEN para receber novos processos/documentos,
-     * notificações de conclusão de trâmites ou notificação de recusa de processos
-     *
-     * @return void
-     */
-  public function processarTarefasEnvioPEN($arrParametros)
-    {
-      InfraDebug::getInstance()->setBolLigado(true);
-      InfraDebug::getInstance()->setBolDebugInfra(false);
-      InfraDebug::getInstance()->setBolEcho(false);
-      InfraDebug::getInstance()->limpar();
-
-    try {
-      if (!PENIntegracao::verificarCompatibilidadeConfiguracoes()) {
-        return false;
-      }
-
-        $bolDebugAtivo = array_key_exists('debug', $arrParametros) && $arrParametros['debug'][0] != false;
-        $bolMonitoramentoAtivado = array_key_exists('monitorar', $arrParametros) && $arrParametros['monitorar'][0] != false;
-        $strValorWorkers = array_key_exists('workers', $arrParametros) ? $arrParametros['workers'][0] : null;
-        $strValorWorkers = (is_null($strValorWorkers) && array_key_exists('worker', $arrParametros)) ? $arrParametros['worker'][0] : $strValorWorkers;
-        $numValorWorkers = is_numeric($strValorWorkers) ? intval($strValorWorkers) : null;
-        $bolForcarInicializacaoWorkers = array_key_exists('forcarInicializacaoWorkers', $arrParametros) && $arrParametros['forcarInicializacaoWorkers'][0] == true;
-        $bolAtivaWorker = (is_null($numValorWorkers) || $numValorWorkers > 0) && ($this->foiIniciadoPeloTerminal() || $bolForcarInicializacaoWorkers);
-
-        $objConfiguracaoModPEN = ConfiguracaoModPEN::getInstance();
-        $arrObjGearman = $objConfiguracaoModPEN->getValor("PEN", "Gearman", false);
-        $bolExecutarEmSegundoPlano = !empty(trim(@$arrObjGearman["Servidor"] ?: null));
-
-        // Inicializa workers do Gearman caso este componente esteja configurado e não desativado no agendamento do sistema
-      if ($bolAtivaWorker && $bolExecutarEmSegundoPlano) {
-          ProcessarPendenciasRN::inicializarWorkers($numValorWorkers);
-      }
-
-        // Faz uma requisição para o controlador do sistema
-        PendenciasEnvioTramiteRN::inicializarMonitoramentoEnvioPendencias($numValorWorkers, $bolMonitoramentoAtivado, $bolExecutarEmSegundoPlano, $bolDebugAtivo);
-    } catch (Exception $e) {
-        InfraDebug::getInstance()->setBolLigado(false);
-        InfraDebug::getInstance()->setBolDebugInfra(false);
-        InfraDebug::getInstance()->setBolEcho(false);
-
-        throw new InfraException('Módulo do Tramita: Erro processando pendências de trâmites do Barramento de Serviços do PEN.', $e);
-    }
-  }
 
   private function foiIniciadoPeloTerminal()
     {

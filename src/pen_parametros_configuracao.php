@@ -8,7 +8,7 @@ try {
     session_start();
 
     define('PEN_RECURSO_ATUAL', 'pen_parametros_configuracao');
-    define('PEN_PAGINA_TITULO', 'Parâmetros de Configuração do Módulo Tramita GOV.BR');
+    define('PEN_PAGINA_TITULO', 'Parâmetros de Configuração do Módulo de Tramitações PEN');
 
     $objPagina = PaginaSEI::getInstance();
     $objBanco = BancoSEI::getInstance();
@@ -61,7 +61,7 @@ try {
     $arrObjUnidade = $objUnidadeRN->listarRN0127($objUnidadeDTO);
 
   if ($objPenParametroDTO===null){
-      throw new InfraException("Módulo do Tramita: Registros não encontrados.");
+      throw new InfraException("Registros não encontrados.");
   }
 
   switch ($_GET['acao']) {
@@ -91,11 +91,11 @@ try {
         die;
 
     case 'pen_parametros_configuracao':
-        $strTitulo = 'Parâmetros de Configuração do Módulo Tramita GOV.BR';
+        $strTitulo = 'Parâmetros de Configuração do Módulo de Tramitações PEN';
         break;
 
     default:
-        throw new InfraException("Módulo do Tramita: Ação '" . $_GET['acao'] . "' não reconhecida.");
+        throw new InfraException("Ação '" . $_GET['acao'] . "' não reconhecida.");
   }
 
 } catch (Exception $e) {
@@ -145,7 +145,7 @@ $objPagina->abrirJavaScript();
 ?>
 
 function inicializar(){
-    if ('<?php echo htmlspecialchars($_GET['acao'])?>'=='pen_parametros_configuracao_selecionar'){
+    if ('<?= htmlspecialchars($_GET['acao'])?>'=='pen_parametros_configuracao_selecionar'){
         infraReceberSelecao();
         document.getElementById('btnFecharSelecao').focus();
     }else{
@@ -183,15 +183,16 @@ $objPagina->fecharHead();
 $objPagina->abrirBody($strTitulo, 'onload="inicializar();"');
 ?>
 
-<form id="frmInfraParametroCadastro" method="post" onsubmit="return OnSubmitForm();" action="<?php echo $objSessao->assinarLink('controlador.php?acao='.htmlspecialchars($_GET['acao']).'_salvar&acao_origem='.htmlspecialchars($_GET['acao']))?>">
+<form id="frmInfraParametroCadastro" method="post" onsubmit="return OnSubmitForm();" action="<?=$objSessao->assinarLink('controlador.php?acao='.htmlspecialchars($_GET['acao']).'_salvar&acao_origem='.htmlspecialchars($_GET['acao']))?>">
     <?
     $objPagina->montarBarraComandosSuperior($arrComandos);
     $objPagina->getInstance()->abrirAreaDados('30em');
     foreach ($retParametros as $parametro) {
 
+        //echo '<div class="container">';
        //Esse parâmetro não aparece, por já existencia de uma tela só para alteração do próprio.
         if ($parametro->getStrNome() != 'HIPOTESE_LEGAL_PADRAO' && $parametro->getStrNome() != 'PEN_TIPO_PROCESSO_EXTERNO') {
-        ?> <label id="lbl<?php echo PaginaSEI::tratarHTML($parametro->getStrNome()); ?>" for="txt<?php echo PaginaSEI::tratarHTML($parametro->getStrNome()); ?>" accesskey="N" class="infraLabelObrigatorio"><?php echo  PaginaSEI::tratarHTML($parametro->getStrDescricao()); ?>:</label> <?
+        ?> <label id="lbl<?= PaginaSEI::tratarHTML($parametro->getStrNome()); ?>" for="txt<?= PaginaSEI::tratarHTML($parametro->getStrNome()); ?>" accesskey="N" class="infraLabelObrigatorio"><?=  PaginaSEI::tratarHTML($parametro->getStrDescricao()); ?>:</label> <?php
         }
 
         //Constrói o campo de valor

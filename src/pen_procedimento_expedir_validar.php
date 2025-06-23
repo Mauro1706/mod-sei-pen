@@ -4,14 +4,14 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 session_start();
 
-$arrResponse = ['sucesso' => false, 'mensagem' => '', 'erros' => []];
+$arrResponse = array('sucesso' => false, 'mensagem' => '', 'erros' => array());
 $objInfraException = new InfraException();
 
 
 try {
 
   if(!array_key_exists('id_procedimento', $_GET) || empty($_GET['id_procedimento'])) {
-      throw new InfraException('Módulo do Tramita: Nenhum procedimento foi informado', 'Desconhecido');
+      throw new InfraException('Nenhum procedimento foi informado', 'Desconhecido');
   }
 
     $dblIdProcedimento = $_GET['id_procedimento'];
@@ -20,7 +20,7 @@ try {
     $objProcedimentoDTO = $objExpedirProcedimentosRN->consultarProcedimento($dblIdProcedimento);
 
   if(empty($objProcedimentoDTO)) {
-      throw new InfraException('Módulo do Tramita: Procedimento não foi localizado', 'Desconhecido');
+      throw new InfraException('Procedimento não foi localizado', 'Desconhecido');
   }
 
     // Utilizamos o protocolo para criar um indice para separar os erros entre o
@@ -43,17 +43,15 @@ try {
       $objProcedimentoDTO->setArrObjDocumentoDTO($objExpedirProcedimentosRN->listarDocumentos($dblIdProcedimento));
       $objProcedimentoDTO->setArrObjParticipanteDTO($objExpedirProcedimentosRN->listarInteressados($dblIdProcedimento));
       $objExpedirProcedimentosRN->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, $strProtocoloFormatado);
-      $objExpedirProcedimentosRN->validarProcessoIncluidoBlocoEmAndamento($objInfraException, $objProcedimentoDTO, $strProtocoloFormatado);
 
       // Processos apensados
-    if(array_key_exists('selProcedimentosApensados', $_POST) && is_array($_POST['selProcedimentosApensados'])) {
+    if(array_key_exists('selProcedimentosApensados', $_POST) && is_array($_POST['selProcedimentosApensados'])){
       foreach($_POST['selProcedimentosApensados'] as $dblIdProcedimento) {
         $objProcedimentoDTO = $objExpedirProcedimentosRN->consultarProcedimento($dblIdProcedimento);
         $strProtocoloFormatado = $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado();
         $objProcedimentoDTO->setArrObjDocumentoDTO($objExpedirProcedimentosRN->listarDocumentos($dblIdProcedimento));
         $objProcedimentoDTO->setArrObjParticipanteDTO($objExpedirProcedimentosRN->listarInteressados($dblIdProcedimento));
         $objExpedirProcedimentosRN->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, $strProtocoloFormatado);
-        $objExpedirProcedimentosRN->validarProcessoIncluidoBlocoEmAndamento($objInfraException, $objProcedimentoDTO, $strProtocoloFormatado);
       }
     }
   }
@@ -66,13 +64,13 @@ catch(\InfraException $e) {
 
 if($objInfraException->contemValidacoes()) {
 
-    $arrErros = [];
+    $arrErros = array();
   foreach($objInfraException->getArrObjInfraValidacao() as $objInfraValidacao) {
       $strAtributo = $objInfraValidacao->getStrAtributo();
-    if(!array_key_exists($strAtributo, $arrErros)) {
-        $arrErros[$strAtributo] = [];
+    if(!array_key_exists($strAtributo, $arrErros)){
+        $arrErros[$strAtributo] = array();
     }
-      $arrErros[$strAtributo][] = mb_convert_encoding($objInfraValidacao->getStrDescricao(), 'UTF-8', 'ISO-8859-1');
+      $arrErros[$strAtributo][] = utf8_encode($objInfraValidacao->getStrDescricao());
   }
 
     $arrResponse['erros'] = $arrErros;

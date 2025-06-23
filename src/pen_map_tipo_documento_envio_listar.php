@@ -4,6 +4,8 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 /**
  * Consulta os logs do estado do procedimento ao ser expedido
+ * 
+ *
  */
 
 session_start();
@@ -38,15 +40,16 @@ try {
             exit(0);
         }
         else {                    
-            throw new InfraException('Módulo do Tramita: Nenhum Registro foi selecionado para executar esta ação');
-        }            
+            throw new InfraException('Nenhum Registro foi selecionado para executar esta ação');
+        }
+          break;            
                 
       case 'pen_map_tipo_documento_envio_listar':
           // Ação padrão desta tela
           break;
                 
       default:
-          throw new InfraException('Módulo do Tramita: Ação não permitida nesta tela');
+          throw new InfraException('Ação não permitida nesta tela');
             
     }
   }
@@ -55,18 +58,18 @@ try {
     $strTitulo = 'Lista dos Mapeamentos de Tipos de Documento para Envio';
 
     $strBotaoEspeciePadrao = "";
-  if(SessaoSEI::getInstance()->verificarPermissao('pen_map_tipo_documento_envio_padrao_consultar')) {
-      $strBotaoEspeciePadrao = '<button type="button" accesskey="C" onclick="location.href=\''.$objSessaoSEI->assinarLink('controlador.php?acao=pen_map_tipo_documento_envio_padrao_consultar&acao_origem='.$_GET['acao'].'&acao_retorno='.$_GET['acao']).'\'" id="btnConsultarPadrao" value="Consultar Espécie Documental padrão do Tramita GOV.BR" class="infraButton"><span class="infraTeclaAtalho">C</span>onsultar Espécie Padrão</button>';
+  if(SessaoSEI::getInstance()->verificarPermissao('pen_map_tipo_documento_envio_padrao_consultar')){
+      $strBotaoEspeciePadrao = '<button type="button" accesskey="C" onclick="location.href=\''.$objSessaoSEI->assinarLink('controlador.php?acao=pen_map_tipo_documento_envio_padrao_consultar&acao_origem='.$_GET['acao'].'&acao_retorno='.$_GET['acao']).'\'" id="btnConsultarPadrao" value="Consultar Espécie Documental padrão do PEN" class="infraButton"><span class="infraTeclaAtalho">C</span>onsultar Espécie Padrão</button>';
   }
         
-  if(SessaoSEI::getInstance()->verificarPermissao('pen_map_tipo_documento_envio_padrao_atribuir')) {
-      $bolPadraoNaoAtribuido = empty((new PenParametroRN())->getParametro("PEN_ESPECIE_DOCUMENTAL_PADRAO_ENVIO"));
+  if(SessaoSEI::getInstance()->verificarPermissao('pen_map_tipo_documento_envio_padrao_atribuir')){
+      $bolPadraoNaoAtribuido = empty((new PenParametroRN())->getParametro( "PEN_ESPECIE_DOCUMENTAL_PADRAO_ENVIO"));
       $strClassePendencia = ($bolPadraoNaoAtribuido) ? "pendencia" : "";
       $strAltPendencia = ($bolPadraoNaoAtribuido) ? "Pendente atribuição de espécie documental padrão para envio de processos" : "";
       $strBotaoEspeciePadrao = '<button type="button" accesskey="A" onclick="location.href=\''.$objSessaoSEI->assinarLink('controlador.php?acao=pen_map_tipo_documento_envio_padrao_atribuir&acao_origem='.$_GET['acao'].'&acao_retorno='.$_GET['acao']).'\'" id="btnAtribuirPadrao" title="'.$strAltPendencia.'" class="infraButton"><span class="'.$strClassePendencia.'"></span><span class="infraTeclaAtalho">A</span>tribuir Espécie Padrão</button>';
   }
 
-    $arrComandos = [];
+    $arrComandos = array();
     $arrComandos[] = '<button type="button" accesskey="P" onclick="onClickBtnPesquisar();" id="btnPesquisar" value="Pesquisar" class="infraButton"><span class="infraTeclaAtalho">P</span>esquisar</button>';
     $arrComandos[] = $strBotaoEspeciePadrao;
     $arrComandos[] = '<button type="button" value="Novo" onclick="onClickBtnNovo()" class="infraButton"><span class="infraTeclaAtalho">N</span>ovo</button>';
@@ -99,7 +102,7 @@ try {
     $objPaginaSEI->processarPaginacao($objPenRelTipoDocMapEnviadoDTO);
     $numRegistros = count($arrObjPenRelTipoDocMapEnviadoDTO);
 
-  if(!empty($arrObjPenRelTipoDocMapEnviadoDTO)) {
+  if(!empty($arrObjPenRelTipoDocMapEnviadoDTO)){
         
       $strResultado = '';
       $strResultado .= '<table width="99%" class="infraTable">'."\n";
@@ -107,7 +110,7 @@ try {
       $strResultado .= '<tr>';
       $strResultado .= '<th class="infraTh" width="1%">'.$objPaginaSEI->getThCheck().'</th>'."\n";
       $strResultado .= '<th class="infraTh" width="35%">Tipo de Documento SEI</th>'."\n";        
-      $strResultado .= '<th class="infraTh" width="35%">Espécie Documental Tramita GOV.BR</th>'."\n";
+      $strResultado .= '<th class="infraTh" width="35%">Espécie Documental PEN</th>'."\n";
       $strResultado .= '<th class="infraTh" width="14%">Ações</th>'."\n";
       $strResultado .= '</tr>'."\n";
       $strCssTr = '';
@@ -251,12 +254,12 @@ $objPaginaSEI->abrirBody($strTitulo, 'onload="inicializar();"');
         <label for="nome_serie" class="infraLabelOpcional input-label-first">Tipo de Documento SEI:</label>
         <input type="text" name="nome_serie"  class="infraText input-field-first" onkeyup="return tratarEnter(event)" value="<?php print htmlspecialchars($_POST['nome_serie']); ?>"/>
         
-        <label for="nome_especie" class="infraLabelOpcional input-label-second">Espécie Documental Tramita GOV.BR:</label>
+        <label for="nome_especie" class="infraLabelOpcional input-label-second">Espécie Documental PEN:</label>
         <input type="text" name="nome_especie"  class="infraText input-field-second" onkeyup="return tratarEnter(event)" value="<?php print htmlspecialchars($_POST['nome_especie']); ?>"/>
 
     <?php $objPaginaSEI->fecharAreaDados(); ?>
     
-    <?php if($numRegistros > 0) : ?>
+    <?php if($numRegistros > 0): ?>
         <?php $objPaginaSEI->montarAreaTabela($strResultado, $numRegistros); ?>
     <?php else: ?>
         <div style="clear:both"></div>

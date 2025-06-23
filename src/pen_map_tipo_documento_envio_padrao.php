@@ -55,7 +55,7 @@ try {
         break;
     
     default:
-        throw new InfraException("Módulo do Tramita: Ação '".$_GET['acao']."' não reconhecida.");
+        throw new InfraException("Ação '".$_GET['acao']."' não reconhecida.");
   }
   
   $objTipoDocMapRN = new TipoDocMapRN();
@@ -86,9 +86,9 @@ PaginaSEI::getInstance()->abrirJavaScript();
 ?>
 function inicializar(){
   
-  if ('<?php echo htmlspecialchars($_GET['acao'])?>'=='pen_map_tipo_documento_envio_padrao_atribuir'){
+  if ('<?=htmlspecialchars($_GET['acao'])?>'=='pen_map_tipo_documento_envio_padrao_atribuir'){
     document.getElementById('selEspeciePadraoEnvio').focus();
-  } else if ('<?php echo htmlspecialchars($_GET['acao'])?>'=='pen_map_tipo_documento_envio_padrao_consultar'){
+  } else if ('<?=htmlspecialchars($_GET['acao'])?>'=='pen_map_tipo_documento_envio_padrao_consultar'){
     infraDesabilitarCamposAreaDados();
   }
   
@@ -114,7 +114,7 @@ PaginaSEI::getInstance()->fecharJavaScript();
 PaginaSEI::getInstance()->fecharHead();
 PaginaSEI::getInstance()->abrirBody($strTitulo, 'onload="inicializar();"');
 ?>
-<form id="frmEspeciePadraoAtribuir" method="post" onsubmit="return OnSubmitForm();" action="<?php echo SessaoSEI::getInstance()->assinarLink('controlador.php?acao='.htmlspecialchars($_GET['acao']).'&acao_origem='.htmlspecialchars($_GET['acao_origem']).$strParametros)?>">
+<form id="frmEspeciePadraoAtribuir" method="post" onsubmit="return OnSubmitForm();" action="<?=SessaoSEI::getInstance()->assinarLink('controlador.php?acao='.htmlspecialchars($_GET['acao']).'&acao_origem='.htmlspecialchars($_GET['acao_origem']).$strParametros)?>">
 <?
 PaginaSEI::getInstance()->montarBarraComandosSuperior($arrComandos);
 PaginaSEI::getInstance()->abrirAreaDados('30em');
@@ -129,9 +129,9 @@ PaginaSEI::getInstance()->abrirAreaDados('30em');
   </p>  
 </fieldset>
 
-<label id="lblEspeciePadraoEnvio" for="selEspeciePadraoEnvio" accesskey="P" class="infraLabelObrigatorio"><span class="infraTeclaAtalho">E</span>spécie Documental Tramita GOV.BR padrão para envio:</label>
-<select id="selEspeciePadraoEnvio" name="selEspeciePadraoEnvio" class="infraSelect" tabindex="<?php echo PaginaSEI::getInstance()->getProxTabDados()?>">
-<?php echo $strItensSelEspeciesDocumentais?>
+<label id="lblEspeciePadraoEnvio" for="selEspeciePadraoEnvio" accesskey="P" class="infraLabelObrigatorio"><span class="infraTeclaAtalho">E</span>spécie Documental PEN padrão para envio:</label>
+<select id="selEspeciePadraoEnvio" name="selEspeciePadraoEnvio" class="infraSelect" tabindex="<?=PaginaSEI::getInstance()->getProxTabDados()?>">
+<?=$strItensSelEspeciesDocumentais?>
 </select>  
 <?
 PaginaSEI::getInstance()->fecharAreaDados();  

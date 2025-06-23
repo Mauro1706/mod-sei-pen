@@ -5,11 +5,9 @@
  */
 require_once DIR_SEI_WEB.'/SEI.php';
 
-class PenAtributoAndamentoDTO extends AtributoAndamentoDTO
-{
+class PenAtributoAndamentoDTO extends AtributoAndamentoDTO {
 
-  public function montar()
-    {
+  public function montar() {
 
       parent::montar();
 

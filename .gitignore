@@ -8,6 +8,7 @@ src/config/supervisor.ini
 **/tests_funcional_falsos_positivos_temp/
 compatibilidade.json
 
+
 .vscode
 
 cobertura.xml

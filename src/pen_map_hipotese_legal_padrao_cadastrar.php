@@ -11,7 +11,7 @@ session_start();
 
 define('PEN_RECURSO_ATUAL', 'pen_map_hipotese_legal_padrao_cadastrar');
 define('PEN_RECURSO_BASE', 'pen_map_hipotese_legal_padrao');
-define('PEN_PAGINA_TITULO', 'Hipótese de Restrição Padrão - Tramita GOV.BR');
+define('PEN_PAGINA_TITULO', 'Hipótese de Restrição Padrão - Tramitação PEN');
 define('PEN_PAGINA_GET_ID', 'id_mapeamento');
 
 
@@ -25,7 +25,7 @@ try {
     $objSessao->validarLink();
     $objSessao->validarPermissao(PEN_RECURSO_ATUAL);
 
-    $arrComandos = [];
+    $arrComandos = array();
 
     $bolSomenteLeitura = false;
 
@@ -39,12 +39,12 @@ try {
     case PEN_RECURSO_BASE.'_visualizar':
         $arrComandos[] = '<button type="button" name="btnFechar" value="Fechar class="infraButton" onclick="location.href=\'' . $objPagina->formatarXHTML($objSessao->assinarLink('controlador.php?acao=principal&acao_origem=' . $_GET['acao'])) . '\';"><span class="infraTeclaAtalho">F</span>echar</button>';
         $bolSomenteLeitura = true;
-        $strTitulo =  sprintf('Consultar %s', PEN_PAGINA_TITULO);
+       $strTitulo =  sprintf('Consultar %s', PEN_PAGINA_TITULO);
         break;
 
 
     default:
-        throw new InfraException("Módulo do Tramita: Ação '" . $_GET['acao'] . "' não reconhecida.");
+        throw new InfraException("Ação '" . $_GET['acao'] . "' não reconhecida.");
   }
 
     //--------------------------------------------------------------------------
@@ -55,7 +55,7 @@ try {
   if(strtoupper($_SERVER['REQUEST_METHOD']) === 'POST') {
 
     if(!array_key_exists('id_hipotese_legal', $_POST) || empty($_POST['id_hipotese_legal'])) {
-        throw new InfraException('Módulo do Tramita: Nenhuma "Espécie Documental" foi selecionada');
+        throw new InfraException('Nenhuma "Espécie Documental" foi selecionada');
     }
 
       $objPenParametroDTO = new PenParametroDTO();
@@ -104,7 +104,10 @@ try {
     $objHipoteseLegalRN = new HipoteseLegalRN();
     $arrMapIdHipoteseLegal = InfraArray::converterArrInfraDTO($objHipoteseLegalRN->listar($objHipoteseLegalDTO), 'Nome', 'IdHipoteseLegal');
 }
-catch(InfraException|Exception $e) {
+catch (InfraException $e) {
+    $objPagina->processarExcecao($e);
+}
+catch(Exception $e) {
     $objPagina->processarExcecao($e);
 }
 
@@ -152,15 +155,14 @@ function onSubmit() {
 $objPagina->fecharHead();
 $objPagina->abrirBody($strTitulo, 'onload="inicializar();"');
 ?>
-<form id="<?php print PEN_RECURSO_BASE; ?>_form" onsubmit="return onSubmit();" method="post" action="">
+<form id="<?php print PEN_RECURSO_BASE; ?>_form" onsubmit="return onSubmit();" method="post" action="<?php //print $objSessaoSEI->assinarLink($strProprioLink);  ?>">
     <?php $objPagina->montarBarraComandosSuperior($arrComandos); ?>
     <?php //$objPagina->montarAreaValidacao(); ?>
     <?php $objPagina->abrirAreaDados('12em'); ?>
 
     <label for="id_hipotese_legal" class="infraLabelObrigatorio input-label-first">Hipótese Legal:</label>
 
-    <select name="id_hipotese_legal" class="infraSelect input-field-first"<?php if($bolSomenteLeitura) : ?>  disabled="disabled" readonly="readonly"<?php 
-   endif; ?>>
+    <select name="id_hipotese_legal" class="infraSelect input-field-first"<?php if($bolSomenteLeitura): ?>  disabled="disabled" readonly="readonly"<?php endif; ?>>
         <?php print InfraINT::montarSelectArray('', 'Selecione', $objPenParametroDTO->getStrValor(), $arrMapIdHipoteseLegal); ?>
     </select>
 

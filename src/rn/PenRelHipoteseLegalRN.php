@@ -2,11 +2,9 @@
 
 require_once DIR_SEI_WEB.'/SEI.php';
 
-abstract class PenRelHipoteseLegalRN extends InfraRN
-{
+abstract class PenRelHipoteseLegalRN extends InfraRN {
 
-  protected function inicializarObjInfraIBanco()
-    {
+  protected function inicializarObjInfraIBanco(){
       return BancoSEI::getInstance();
   }
 
@@ -17,7 +15,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
         return $objBD->listar($objDTO);
     }
     catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro ao listar mapeamento de hipóteses legais', $e);
+        throw new InfraException('Erro ao listar mapeamento de hipóteses legais', $e);
     }
   }
 
@@ -28,7 +26,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
         return $objBD->consultar($objDTO);
     }
     catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro ao consultar mapeamento de hipóteses legais', $e);
+        throw new InfraException('Erro ao consultar mapeamento de hipóteses legais', $e);
     }
   }
 
@@ -39,7 +37,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
         return $objBD->alterar($objDTO);
     }
     catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro ao alterar mapeamento de hipótese legal', $e);
+        throw new InfraException('Erro ao alterar mapeamento de hipótese legal', $e);
     }
   }
 
@@ -50,7 +48,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
         return $objBD->cadastrar($objDTO);
     }
     catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro ao cadastrar mapeamento de hipótese legal', $e);
+        throw new InfraException('Erro ao cadastrar mapeamento de hipótese legal', $e);
     }
   }
 
@@ -61,12 +59,11 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
         return $objBD->excluir($objDTO);
     }
     catch (Exception $e) {
-        throw new InfraException('Módulo do Tramita: Erro ao excluir mapeamento de hipóteses legais', $e);
+        throw new InfraException('Erro ao excluir mapeamento de hipóteses legais', $e);
     }
   }
 
-  public function getIdBarramentoEmUso(PenRelHipoteseLegalDTO $objFiltroDTO, $strTipo = 'E')
-    {
+  public function getIdBarramentoEmUso(PenRelHipoteseLegalDTO $objFiltroDTO, $strTipo = 'E'){
 
       $objDTO = new PenRelHipoteseLegalDTO();
       $objDTO->setDistinct(true);
@@ -79,7 +76,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
 
       $arrObjDTO = $this->listar($objDTO);
 
-      $arrIdBarramento = [];
+      $arrIdBarramento = array();
 
     if(!empty($arrObjDTO)) {
         $arrIdBarramento = InfraArray::converterArrInfraDTO($arrObjDTO, 'IdBarramento');
@@ -100,7 +97,7 @@ abstract class PenRelHipoteseLegalRN extends InfraRN
 
       $arrObjDTO = $this->listar($objDTO);
 
-      $arrIdBarramento = [];
+      $arrIdBarramento = array();
 
     if(!empty($arrObjDTO)) {
         $arrIdBarramento = InfraArray::converterArrInfraDTO($arrObjDTO, 'IdHipoteseLegal');

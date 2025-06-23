@@ -4,12 +4,12 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 /**
  * Classe gererica de persistncia com o banco de dados
+ *
+ *
  */
-class PenParametroBD extends InfraBD
-{
+class PenParametroBD extends InfraBD {
 
-  public function setValor($strNome, $strValor)
-    {
+  public function setValor($strNome, $strValor) {
 
       $sql = '';
       $sql .= ' SELECT count(*) as existe';
@@ -21,7 +21,7 @@ class PenParametroBD extends InfraBD
     if ($rs[0]['existe'] == 0) {
 
       if (strlen($strNome) > 100) {
-        throw new InfraException('Módulo do Tramita: Nome do parâmetro possui tamanho superior a 100 caracteres.');
+        throw new InfraException('Nome do parâmetro possui tamanho superior a 100 caracteres.');
       }
 
         $sql = '';
@@ -36,11 +36,12 @@ class PenParametroBD extends InfraBD
         $sql .= ' WHERE nome = ' . $this->getObjInfraIBanco()->formatarGravacaoStr($strNome);
     }
 
-      return $this->getObjInfraIBanco()->executarSql($sql);
+      $ret = $this->getObjInfraIBanco()->executarSql($sql);
+
+      return $ret;
   }
 
-  public function isSetValor($strNome)
-    {
+  public function isSetValor($strNome) {
 
       $sql = '';
       $sql .= ' SELECT valor';

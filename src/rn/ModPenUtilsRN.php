@@ -8,7 +8,7 @@ class ModPenUtilsRN extends InfraRN
 {
   protected function inicializarObjInfraIBanco()
     {
-      return BancoSEI::getInstance();
+    return BancoSEI::getInstance();
   }
 
   public static function obterUnidadeRecebimento()
@@ -16,7 +16,7 @@ class ModPenUtilsRN extends InfraRN
       $objPenParametroRN = new PenParametroRN();
       $numUnidadeRecebimentoProcessos = $objPenParametroRN->getParametro('PEN_UNIDADE_GERADORA_DOCUMENTO_RECEBIDO');
 
-    if(empty($numUnidadeRecebimentoProcessos)) {
+    if(empty($numUnidadeRecebimentoProcessos)){
         $objInfraParametro = new InfraParametro(BancoSEI::getInstance());
         $numUnidadeRecebimentoProcessos = $objInfraParametro->getValor('ID_UNIDADE_TESTE');
     }
@@ -30,7 +30,7 @@ class ModPenUtilsRN extends InfraRN
 
     if(empty($numUnidadeRecebimentoProcessos)) {
         $strMensagem = "Configuração da unidade para representação de trâmites em órgãos externos não pode ser localizada.\n";
-        $strMensagem .= "Necessário atribuição de uma unidade válida nos parâmetros do Módulo Tramita GOV.BR (mod-sei-pen)";
+        $strMensagem .= "Necessário atribuição de uma unidade válida nos parâmetros do Módulo de Integração PEN (mod-sei-pen)";
         throw new InfraException($strMensagem);
     }
 

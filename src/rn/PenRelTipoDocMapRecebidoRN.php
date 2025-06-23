@@ -4,26 +4,25 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 class PenRelTipoDocMapRecebidoRN extends InfraRN
 {
-  public function __construct()
-    {
+  public function __construct() {
       parent::__construct();
   }
 
-  protected function inicializarObjInfraIBanco()
-    {
+  protected function inicializarObjInfraIBanco() {
       return BancoSEI::getInstance();
   }
 
   protected function listarEmUsoConectado($dblCodigoEspecie)
     {
-      $arrNumCodigoEspecie = [];
+      $arrNumCodigoEspecie = array();
+      $objInfraIBanco = $this->inicializarObjInfraIBanco();
 
       $objDTO = new PenRelTipoDocMapRecebidoDTO();
       $objDTO->retNumCodigoEspecie();
       $objDTO->setDistinct(true);
       $objDTO->setBolExclusaoLogica(false);
 
-      $objGenericoBD = new GenericoBD($this->inicializarObjInfraIBanco());
+      $objGenericoBD = new GenericoBD($objInfraIBanco);
       $arrObjPenRelTipoDocMapRecebidoDTO = $objGenericoBD->listar($objDTO);
 
     if(!empty($arrObjPenRelTipoDocMapRecebidoDTO)) {
@@ -46,7 +45,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
     /**
      * Cadastra mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN
      *
-     * @param  PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
+     * @param PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
      * @return void
      */
   public function cadastrarControlado(PenRelTipoDocMapRecebidoDTO $objParamDTO)
@@ -76,6 +75,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
     /**
      * Consulta os mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN para recebimento
      *
+     * @param PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
      * @return void
      */
   protected function consultarConectado(PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO)
@@ -84,7 +84,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
         $objPenRelTipoDocMapRecebidoBD = new PenRelTipoDocMapEnviadoBD($this->getObjInfraIBanco());
         return $objPenRelTipoDocMapRecebidoBD->consultar($parObjPenRelTipoDocMapRecebidoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro consultando mapeamento de documentos para recebimento.', $e);
+        throw new InfraException('Erro consultando mapeamento de documentos para recebimento.', $e);
     }
   }
 
@@ -92,7 +92,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
     /**
      * Remove uma espécie documental da base de dados do SEI baseado em um código de espécie do Barramento
      *
-     * @param  int $parNumIdEspecieDocumentla
+     * @param int $parNumIdEspecieDocumentla
      * @return void
      */
   protected function excluirPorEspecieDocumentalControlado($parNumIdEspecieDocumental)
@@ -108,13 +108,14 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
       }
 
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro removendo Mapeamento de Tipos de Documento para recebimento pelo código de espécie.', $e);
+      throw new InfraException('Erro removendo Mapeamento de Tipos de Documento para recebimento pelo código de espécie.', $e);
     }
   }
 
     /**
      * Lista mapeamentos de tipos de documentos para recebimento de processos pelo Barramento PEN
      *
+     * @param PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
      * @return array
      */
   protected function listarConectado(PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO)
@@ -124,29 +125,30 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
         $objPenRelTipoDocMapRecebidoBD = new PenRelTipoDocMapRecebidoBD($this->getObjInfraIBanco());
         return $objPenRelTipoDocMapRecebidoBD->listar($parObjPenRelTipoDocMapRecebidoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro listando mapeamento de Tipos de Documento para recebimento.', $e);
+        throw new InfraException('Erro listando mapeamento de Tipos de Documento para recebimento.', $e);
     }
   }
 
     /**
      * Conta a lista de mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN
      *
+     * @param PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
      * @return int
      */
   protected function contarConectado(PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO)
     {
     try {
-        $objPenRelTipoDocMapRecebidoBD = new PenRelTipoDocMapRecebidoBD($this->getObjInfraIBanco());
-        return $objPenRelTipoDocMapRecebidoBD->contar($parObjPenRelTipoDocMapRecebidoDTO);
+      $objPenRelTipoDocMapRecebidoBD = new PenRelTipoDocMapRecebidoBD($this->getObjInfraIBanco());
+      return $objPenRelTipoDocMapRecebidoBD->contar($parObjPenRelTipoDocMapRecebidoDTO);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro contando Mapeamento de Tipos de Documento para Recebimento.', $e);
+      throw new InfraException('Erro contando Mapeamento de Tipos de Documento para Recebimento.', $e);
     }
   }
 
     /**
      * Exclui lista de mapeamentos de tipos de documentos para envio de processos pelo Barramento PEN
      *
-     * @param  PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
+     * @param PenRelTipoDocMapRecebidoDTO $parObjPenRelTipoDocMapRecebidoDTO
      * @return void
      */
   protected function excluirControlado($parArrObjPenRelTipoDocMapRecebidoDTO)
@@ -159,7 +161,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
         $objPenRelTipoDocMapRecebidoBD->excluir($objPenRelTipoDocMapRecebidoDTO);
       }
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro excluindo Mapeamento de Tipos de Documento para Recebimento.', $e);
+        throw new InfraException('Erro excluindo Mapeamento de Tipos de Documento para Recebimento.', $e);
     }
   }
 
@@ -183,11 +185,11 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
 
       // Obter todas as espécies documentais do Barramento de Serviços do PEN
       // Antes separa as espécies com nomes separados por '/' em itens diferentes
-      $arrEspeciesDocumentais = [];
+      $arrEspeciesDocumentais = array();
       $arrEspecies = $objTipoDocMapRN->listarParesEspecie($this->listarEmUso(null));
     foreach ($arrEspecies as $numCodigo => $strItem) {
       foreach (preg_split('/\//', $strItem) as $strNomeEspecie) {
-        $arrEspeciesDocumentais[] = ["codigo" => $numCodigo, "nome" => $strNomeEspecie];
+        $arrEspeciesDocumentais[] = array("codigo" => $numCodigo, "nome" => $strNomeEspecie);
       }
     }
 
@@ -203,7 +205,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
           $numTamNomeEspecie = strlen($strNomeEspecieDocumental);
           $numPosEspacoAdicional = strpos($strNomeTipoDocumento, ' ', min($numTamNomeEspecie, $numTamNomeTipoDoc));
 
-        if($numPosEspacoAdicional) {
+        if($numPosEspacoAdicional){
           // Avaliação com tamanho reduzido, caso seja um termo composto
           $numTamanhoReducao = max($numTamNomeEspecie, $numPosEspacoAdicional);
           $strNomeTipoDocReduzido = substr($strNomeTipoDocumento, 0, $numTamanhoReducao);
@@ -222,11 +224,11 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
 
       }
 
-      if(isset($numMelhorSimilaridade)) {
+      if(isset($numMelhorSimilaridade)){
           // Realiza o mapeamento do tipo de documento com a espécie documental similar
           $objPenRelTipoDocMapRecebidoDTO = new PenRelTipoDocMapRecebidoDTO();
           $objPenRelTipoDocMapRecebidoDTO->setNumCodigoEspecie($numIdEspecieDocumental);
-        if($this->contar($objPenRelTipoDocMapRecebidoDTO) == 0) {
+        if($this->contar($objPenRelTipoDocMapRecebidoDTO) == 0){
             $objPenRelTipoDocMapRecebidoDTO->setNumIdSerie($numIdTipDocumentoSimilar);
             $this->cadastrar($objPenRelTipoDocMapRecebidoDTO);
         }
@@ -268,7 +270,7 @@ class PenRelTipoDocMapRecebidoRN extends InfraRN
         $objPenParametroRN = new PenParametroRN();
         $objPenParametroRN->persistirParametro("PEN_TIPO_DOCUMENTO_PADRAO_RECEBIMENTO", $numTipoDocumentoPadrao);
     }catch(Exception $e){
-        throw new InfraException('Módulo do Tramita: Erro atribuindo Tipos de Documento padrão para recebimento.', $e);
+        throw new InfraException('Erro atribuindo Tipos de Documento padrão para recebimento.', $e);
     }
   }
 

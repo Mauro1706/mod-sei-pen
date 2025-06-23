@@ -4,7 +4,7 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 session_start();
 
-$arrResponse = ['sucesso' => false, 'mensagem' => '', 'erros' => []];
+$arrResponse = array('sucesso' => false, 'mensagem' => '', 'erros' => array());
 $objInfraException = new InfraException();
 
 
@@ -13,25 +13,8 @@ try {
     $arrProtocolosOrigem = $_POST['selProcedimentos'];
 
   if(count($arrProtocolosOrigem) == 0) {
-      throw new InfraException('Módulo do Tramita: Nenhum procedimento foi informado', 'Desconhecido');
+      throw new InfraException('Nenhum procedimento foi informado', 'Desconhecido');
   }    
-
-    $objExpedirProcedimentosRN = new ExpedirProcedimentoRN();
-    $objExpedirProcedimentosRN->verificarProcessosAbertoNaUnidade($objInfraException, $arrProtocolosOrigem);
-  if ($objInfraException->contemValidacoes()) {
-      $arrErros = [];
-    foreach ($objInfraException->getArrObjInfraValidacao() as $objInfraValidacao) {
-        $strAtributo = $objInfraValidacao->getStrAtributo();
-      if (!array_key_exists($strAtributo, $arrErros)) {
-        $arrErros[$strAtributo] = [];
-      }
-        $arrErros[$strAtributo][] = mb_convert_encoding($objInfraValidacao->getStrDescricao(), 'UTF-8', 'ISO-8859-1');
-    }
-
-      $arrResponse['erros'] = $arrErros;
-      print json_encode($arrResponse);
-      exit(0);
-  }
 
   foreach ($arrProtocolosOrigem as $dblIdProcedimento) {
 
@@ -43,7 +26,7 @@ try {
       $strProtocoloFormatado = $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado();
 
     if(empty($objProcedimentoDTO)) {
-        throw new InfraException('Módulo do Tramita: Procedimento '.$strProtocoloFormatado.' não foi localizado', 'Desconhecido');
+        throw new InfraException('Procedimento '.$strProtocoloFormatado.' não foi localizado', 'Desconhecido');
     }        
         
     if(!array_key_exists('selProcedimentos', $_POST) || empty($_POST['selProcedimentos'])) {
@@ -58,9 +41,11 @@ try {
         $objInfraException->adicionarValidacao('Informe Unidade de destino', $strProtocoloFormatado);
     }
 
-      $objProcedimentoDTO->setArrObjDocumentoDTO($objExpedirProcedimentosRN->listarDocumentos($dblIdProcedimento));
-      $objProcedimentoDTO->setArrObjParticipanteDTO($objExpedirProcedimentosRN->listarInteressados($dblIdProcedimento));
-      $objExpedirProcedimentosRN->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO);
+    if(!$objInfraException->contemValidacoes()) {
+        $objProcedimentoDTO->setArrObjDocumentoDTO($objExpedirProcedimentosRN->listarDocumentos($dblIdProcedimento));
+        $objProcedimentoDTO->setArrObjParticipanteDTO($objExpedirProcedimentosRN->listarInteressados($dblIdProcedimento));
+        $objExpedirProcedimentosRN->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, $strProtocoloFormatado);
+    }
   }
 }
 catch(\InfraException $e) {
@@ -69,19 +54,20 @@ catch(\InfraException $e) {
     LogSEI::getInstance()->gravar($strmensagemErro);
 }
 
-if ($objInfraException->contemValidacoes()) {
+if($objInfraException->contemValidacoes()) {
 
-    $arrErros = [];
-  foreach ($objInfraException->getArrObjInfraValidacao() as $objInfraValidacao) {
+    $arrErros = array();
+  foreach($objInfraException->getArrObjInfraValidacao() as $objInfraValidacao) {
       $strAtributo = $objInfraValidacao->getStrAtributo();
-    if (!array_key_exists($strAtributo, $arrErros)) {
-        $arrErros[$strAtributo] = [];
+    if(!array_key_exists($strAtributo, $arrErros)){
+        $arrErros[$strAtributo] = array();
     }
-      $arrErros[$strAtributo][] = mb_convert_encoding($objInfraValidacao->getStrDescricao(), 'UTF-8', 'ISO-8859-1');
+      $arrErros[$strAtributo][] = utf8_encode($objInfraValidacao->getStrDescricao());
   }
 
     $arrResponse['erros'] = $arrErros;
-} else {
+}
+else {
     $arrResponse['sucesso'] = true;
 }
 

@@ -4,9 +4,10 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 /**
  * Mapeamento dos metadados sobre a estrutura do banco de dados
+ *
+ *
  */
-class PenMetaBD extends InfraMetaBD
-{
+class PenMetaBD extends InfraMetaBD {
 
     const NNULLO = 'NOT NULL';
     const SNULLO = 'NULL';
@@ -15,8 +16,7 @@ class PenMetaBD extends InfraMetaBD
      *
      * @return string
      */
-  public function adicionarValorPadraoParaColuna($strNomeTabela, $strNomeColuna, $strValorPadrao, $bolRetornarQuery = false)
-    {
+  public function adicionarValorPadraoParaColuna($strNomeTabela, $strNomeColuna, $strValorPadrao, $bolRetornarQuery = false){
 
       $objInfraBanco = $this->getObjInfraIBanco();
       $strTableDrive = get_parent_class($objInfraBanco);
@@ -25,7 +25,7 @@ class PenMetaBD extends InfraMetaBD
     switch($strTableDrive) {
 
       case 'InfraMySqli':
-          $strQuery = sprintf("ALTER TABLE `%s` ALTER COLUMN `%s` SET DEFAULT '%s'", $strNomeTabela, $strNomeColuna, $strValorPadrao);
+        $strQuery = sprintf("ALTER TABLE `%s` ALTER COLUMN `%s` SET DEFAULT '%s'", $strNomeTabela, $strNomeColuna, $strValorPadrao);
           break;
 
       case 'InfraSqlServer':
@@ -34,10 +34,6 @@ class PenMetaBD extends InfraMetaBD
 
       case 'InfraOracle':
           $strQuery =  sprintf("ALTER TABLE %s MODIFY %s DEFAULT '%s'", $strNomeTabela, $strNomeColuna, $strValorPadrao);
-          break;
-
-      case 'InfraPostgreSql':
-          $strQuery = sprintf("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT '%s'", $strNomeTabela, $strNomeColuna, $strValorPadrao);
           break;
     }
 
@@ -55,12 +51,11 @@ class PenMetaBD extends InfraMetaBD
      *
      * @return PenMetaBD
      */
-  public function isDriverPermissao()
-    {
+  public function isDriverPermissao(){
 
       $objInfraBanco = $this->getObjInfraIBanco();
 
-    if(count($this->obterTabelas('sei_teste'))==0) {
+    if(count($this->obterTabelas('sei_teste'))==0){
         $objInfraBanco->executarSql('CREATE TABLE sei_teste (id '.$this->tipoNumero().' NULL)');
     }
 
@@ -75,29 +70,27 @@ class PenMetaBD extends InfraMetaBD
      * @throws InfraException
      * @return PenMetaBD
      */
-  public function isDriverSuportado()
-    {
+  public function isDriverSuportado(){
 
       $strTableDrive = get_parent_class($this->getObjInfraIBanco());
 
     switch($strTableDrive) {
      
       case 'InfraMySqli': // Fix para bug de MySQL versão inferior ao 5.5 o default engine
-          // é MyISAM e não tem suporte a FOREING KEYS
-          $version = $this->getObjInfraIBanco()->consultarSql('SELECT VERSION() as versao');
-          $version = $version[0]['versao'];
-          $arrVersion = explode('.', $version);
-        if($arrVersion[0].$arrVersion[1] < 56) {
+         // é MyISAM e não tem suporte a FOREING KEYS
+        $version = $this->getObjInfraIBanco()->consultarSql('SELECT VERSION() as versao');
+        $version = $version[0]['versao'];
+        $arrVersion = explode('.', $version);
+        if($arrVersion[0].$arrVersion[1] < 56){
             $this->getObjInfraIBanco()->executarSql('@SET STORAGE_ENGINE=InnoDB');
         }
           break;
       case 'InfraSqlServer':
       case 'InfraOracle':
-      case 'InfraPostgreSql':
           break;
 
       default:
-          throw new InfraException('Módulo do Tramita: BANCO DE DADOS NAO SUPORTADO: ' . $strTableDrive);
+          throw new InfraException('BANCO DE DADOS NAO SUPORTADO: ' . $strTableDrive);
 
     }
 
@@ -110,28 +103,25 @@ class PenMetaBD extends InfraMetaBD
      * @throws InfraException
      * @return PenMetaBD
      */
-  public function isVersaoSuportada($strRegexVersaoSistema, $strVerMinRequirida)
-    {
+  public function isVersaoSuportada($strRegexVersaoSistema, $strVerMinRequirida){
 
       $numVersaoRequerida = intval(preg_replace('/\D+/', '', $strVerMinRequirida));
       $numVersaoSistema = intval(preg_replace('/\D+/', '', $strRegexVersaoSistema));
 
-    if($numVersaoRequerida > $numVersaoSistema) {
-        throw new InfraException('Módulo do Tramita: VERSAO DO FRAMEWORK PHP INCOMPATIVEL (VERSAO ATUAL '.$strRegexVersaoSistema.', VERSAO REQUERIDA '.$strVerMinRequirida.')');
+    if($numVersaoRequerida > $numVersaoSistema){
+        throw new InfraException('VERSAO DO FRAMEWORK PHP INCOMPATIVEL (VERSAO ATUAL '.$strRegexVersaoSistema.', VERSAO REQUERIDA '.$strVerMinRequirida.')');
     }
 
       return $this;
   }
 
-  public function adicionarChaveUnica($strNomeTabela = '', $arrNomeChave = [])
-    {
+  public function adicionarChaveUnica($strNomeTabela = '', $arrNomeChave = array()){
 
       $this->getObjInfraIBanco()
-          ->executarSql('ALTER TABLE '.$strNomeTabela.' ADD CONSTRAINT UK_'.$strNomeTabela.' UNIQUE('.implode(', ', $arrNomeChave).')');
+              ->executarSql('ALTER TABLE '.$strNomeTabela.' ADD CONSTRAINT UK_'.$strNomeTabela.' UNIQUE('.implode(', ', $arrNomeChave).')');
   }
 
-  public function novoRenomearTabela($strNomeTabelaAtual, $strNomeTabelaNovo)
-    {
+  public function renomearTabela($strNomeTabelaAtual, $strNomeTabelaNovo){
 
     if($this->isTabelaExiste($strNomeTabelaAtual)) {
 
@@ -141,50 +131,15 @@ class PenMetaBD extends InfraMetaBD
 
       switch ($strTableDrive) {
         case 'InfraMySqli':
-            $strQuery = sprintf("ALTER TABLE `%s` RENAME TO `%s`", $strNomeTabelaAtual, $strNomeTabelaNovo);
+          $strQuery = sprintf("ALTER TABLE `%s` RENAME TO `%s`", $strNomeTabelaAtual, $strNomeTabelaNovo);
             break;
 
         case 'InfraSqlServer':
-            $strQuery = sprintf("sp_rename '%s', '%s'", $strNomeTabelaAtual, $strNomeTabelaNovo);
+          $strQuery = sprintf("sp_rename '%s', '%s'", $strNomeTabelaAtual, $strNomeTabelaNovo);
             break;
 
         case 'InfraOracle':
-            $strQuery = sprintf("RENAME %s TO %s", $strNomeTabelaAtual, $strNomeTabelaNovo);
-            break;
-
-        case 'InfraPostgreSql':
-            $strQuery = sprintf("ALTER TABLE %s RENAME TO %s", $strNomeTabelaAtual, $strNomeTabelaNovo);
-            break;
-      }
-
-        $objInfraBanco->executarSql($strQuery);
-    }
-  }
-  
-  public function renomearTabela($strNomeTabelaAtual, $strNomeTabelaNovo)
-    {
-
-    if($this->isTabelaExiste($strNomeTabelaAtual)) {
-
-        $objInfraBanco = $this->getObjInfraIBanco();
-        $strTableDrive = get_parent_class($objInfraBanco);
-        $strQuery = '';
-
-      switch ($strTableDrive) {
-        case 'InfraMySqli':
-            $strQuery = sprintf("ALTER TABLE `%s` RENAME TO `%s`", $strNomeTabelaAtual, $strNomeTabelaNovo);
-            break;
-
-        case 'InfraSqlServer':
-            $strQuery = sprintf("sp_rename '%s', '%s'", $strNomeTabelaAtual, $strNomeTabelaNovo);
-            break;
-
-        case 'InfraOracle':
-            $strQuery = sprintf("RENAME TABLE %s TO %s", $strNomeTabelaAtual, $strNomeTabelaNovo);
-            break;
-
-        case 'InfraPostgreSql':
-            $strQuery = sprintf("ALTER TABLE %s RENAME TO %s", $strNomeTabelaAtual, $strNomeTabelaNovo);
+          $strQuery = sprintf("RENAME TABLE %s TO %s", $strNomeTabelaAtual, $strNomeTabelaNovo);
             break;
       }
 
@@ -192,8 +147,7 @@ class PenMetaBD extends InfraMetaBD
     }
   }
 
-  public function renomearColuna($strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova, $strTipo)
-    {
+  public function renomearColuna($strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova, $strTipo){
 
     if($this->isColunaExiste($strNomeTabela, $strNomeColunaAtual)) {
 
@@ -204,15 +158,14 @@ class PenMetaBD extends InfraMetaBD
       switch ($strTableDrive) {
 
         case 'InfraMySqli':
-            $strQuery = sprintf("ALTER TABLE `%s` CHANGE `%s` `%s` %s", $strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova, $strTipo);
+          $strQuery = sprintf("ALTER TABLE `%s` CHANGE `%s` `%s` %s", $strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova, $strTipo);
             break;
 
         case 'InfraSqlServer':
-            $strQuery = sprintf("SP_RENAME '%s.%s', '%s', 'COLUMN'", $strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova);
+          $strQuery = sprintf("SP_RENAME '%s.%s', '%s', 'COLUMN'", $strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova);
             break;
 
         case 'InfraOracle':
-        case 'InfraPostgreSql':
             $strQuery = sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", $strNomeTabela, $strNomeColunaAtual, $strNomeColunaNova);
             break;
       }
@@ -227,18 +180,16 @@ class PenMetaBD extends InfraMetaBD
      * @throws InfraException
      * @return bool
      */
-  public function isTabelaExiste($strNomeTabela = '')
-    {
+  public function isTabelaExiste($strNomeTabela = ''){
 
       return count($this->obterTabelas($strNomeTabela)) != 0;
   }
 
-  public function isColunaExiste($strNomeTabela = '', $strNomeColuna = '')
-    {
+  public function isColunaExiste($strNomeTabela = '', $strNomeColuna = ''){
 
       $arrColunas = $this->obterColunasTabela($strNomeTabela);
     foreach ($arrColunas as $objColuna) {
-      if($objColuna['column_name'] == $strNomeColuna) {
+      if($objColuna['column_name'] == $strNomeColuna){
         return true;
       }
     }
@@ -246,12 +197,11 @@ class PenMetaBD extends InfraMetaBD
       return false;
   }
 
-  public function isChaveExiste($strNomeTabela = '', $strNomeChave = '')
-    {
+  public function isChaveExiste($strNomeTabela = '', $strNomeChave = ''){
 
       $arrConstraints = $this->obterConstraints($strNomeTabela);
     foreach ($arrConstraints as $objConstraint) {
-      if($objConstraint['constraint_name'] == $strNomeChave) {
+      if($objConstraint['constraint_name'] == $strNomeChave){
         return true;
       }
     }
@@ -265,8 +215,7 @@ class PenMetaBD extends InfraMetaBD
      * @throws InfraException
      * @return PenMetaBD
      */
-  public function criarTabela($arrSchema = [])
-    {
+  public function criarTabela($arrSchema = array()){
 
       $strNomeTabela = $arrSchema['tabela'];
 
@@ -275,12 +224,12 @@ class PenMetaBD extends InfraMetaBD
     }
 
       $objInfraBanco = $this->getObjInfraIBanco();
-      $arrColunas = [];
-      $arrStrQuery = [];
+      $arrColunas = array();
+      $arrStrQuery = array();
 
     foreach($arrSchema['cols'] as $strNomeColuna => $arrColunaConfig) {
 
-        [$strTipoDado, $strValorPadrao] = $arrColunaConfig;
+        list($strTipoDado, $strValorPadrao) = $arrColunaConfig;
 
       if($strValorPadrao != self::SNULLO && $strValorPadrao != self::NNULLO) {
 
@@ -294,9 +243,9 @@ class PenMetaBD extends InfraMetaBD
       $objInfraBanco->executarSql('CREATE TABLE '.$strNomeTabela.' ('.implode(', ', $arrColunas).')');
 
     if(!empty($arrSchema['pk'])) {
-        $strNomePK = array_key_exists('nome', $arrSchema['pk']) ? $arrSchema['pk']['nome'] : 'pk_' . $strNomeTabela;
-        $arrColunas = array_key_exists('cols', $arrSchema['pk']) ? $arrSchema['pk']['cols'] : $arrSchema['pk'];
-        $this->adicionarChavePrimaria($strNomeTabela, $strNomePK, $arrColunas);
+       $strNomePK = array_key_exists('nome', $arrSchema['pk']) ? $arrSchema['pk']['nome'] : 'pk_' . $strNomeTabela;
+       $arrColunas = array_key_exists('cols', $arrSchema['pk']) ? $arrSchema['pk']['cols'] : $arrSchema['pk'];
+       $this->adicionarChavePrimaria($strNomeTabela, $strNomePK, $arrColunas);
       if(count($arrColunas) > 1) {
         for ($i=0; $i < count($arrColunas); $i++) {
           $strPk = $arrColunas[$i];
@@ -326,8 +275,11 @@ class PenMetaBD extends InfraMetaBD
       }
     }
 
-    foreach($arrStrQuery as $strQuery) {
-        $objInfraBanco->executarSql($strQuery);
+    if(!empty($arrStrQuery)) {
+
+      foreach($arrStrQuery as $strQuery) {
+          $objInfraBanco->executarSql($strQuery);
+      }
     }
 
       return $this;
@@ -339,15 +291,13 @@ class PenMetaBD extends InfraMetaBD
      * @throws InfraException
      * @return PenMetaBD
      */
-  public function removerTabela($strNomeTabela = '')
-    {
+  public function removerTabela($strNomeTabela = ''){
 
       $this->getObjInfraIBanco()->executarSql('DROP TABLE '.$strNomeTabela);
       return $this;
   }
 
-  public function adicionarChaveEstrangeira($strNomeFK, $strTabela, $arrCampos, $strTabelaOrigem, $arrCamposOrigem, $bolCriarIndice = false)
-    {
+  public function adicionarChaveEstrangeira($strNomeFK, $strTabela, $arrCampos, $strTabelaOrigem, $arrCamposOrigem, $bolCriarIndice = false) {
 
     if(!$this->isChaveExiste($strTabela, $strNomeFK)) {
         parent::adicionarChaveEstrangeira($strNomeFK, $strTabela, $arrCampos, $strTabelaOrigem, $arrCamposOrigem, $bolCriarIndice);
@@ -355,8 +305,7 @@ class PenMetaBD extends InfraMetaBD
       return $this;
   }
 
-  public function adicionarChavePrimaria($strTabela, $strNomePK, $arrCampos)
-    {
+  public function adicionarChavePrimaria($strTabela, $strNomePK, $arrCampos) {
 
     if(!$this->isChaveExiste($strTabela, $strNomePK)) {
         parent::adicionarChavePrimaria($strTabela, $strNomePK, $arrCampos);
@@ -364,22 +313,19 @@ class PenMetaBD extends InfraMetaBD
       return $this;
   }
 
-  public function alterarColuna($strTabela, $strColuna, $strTipo, $strNull = '')
-    {
+  public function alterarColuna($strTabela, $strColuna, $strTipo, $strNull = '') {
       parent::alterarColuna($strTabela, $strColuna, $strTipo, $strNull);
       return $this;
   }
 
-  public function excluirIndice($strTabela, $strIndex)
-    {
+  public function excluirIndice($strTabela, $strIndex) {
     if($this->isChaveExiste($strTabela, $strFk)) {
         parent::excluirIndice($strTabela, $strIndex);
     }
       return $this;
   }
 
-  public function excluirChaveEstrangeira($strTabela, $strFk)
-    {
+  public function excluirChaveEstrangeira($strTabela, $strFk) {
     if($this->isChaveExiste($strTabela, $strFk)) {
         parent::excluirChaveEstrangeira($strTabela, $strFk);
     }

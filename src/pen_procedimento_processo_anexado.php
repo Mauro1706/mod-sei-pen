@@ -38,7 +38,7 @@ try {
         break;
 
     default:
-        throw new InfraException("Módulo do Tramita: Ação '".$_GET['acao']."' não reconhecida.");
+        throw new InfraException("Ação '".$_GET['acao']."' não reconhecida.");
   }
 
   $arrComandos = array();
@@ -81,7 +81,7 @@ try {
             Protocolo:
         </label><br>
         <label>
-            <?php echo $objProtocoloDTO->getStrProtocoloFormatado() ?>
+            <?= $objProtocoloDTO->getStrProtocoloFormatado() ?>
         </label>
         </div>
         
@@ -90,7 +90,7 @@ try {
             Data Geração:
         </label><br>
         <label>
-            <?php echo $objProtocoloDTO->getDtaGeracao() ?>
+            <?= $objProtocoloDTO->getDtaGeracao() ?>
         </label>
         </div>
         
@@ -104,7 +104,7 @@ try {
             Unidade Geradora:
         </label><br>
         <label>
-            <?php echo $objProtocoloDTO->UnidadeGeradora->getStrDescricao() ?>
+            <?= $objProtocoloDTO->UnidadeGeradora->getStrDescricao() ?>
         </label>
         </div>
         
@@ -113,7 +113,7 @@ try {
             Criado por:
         </label><br>
         <label>
-            <?php echo $objProtocoloDTO->UsuarioCriador->getStrNome() ?>
+            <?= $objProtocoloDTO->UsuarioCriador->getStrNome() ?>
         </label>
         </div>
         
@@ -129,7 +129,7 @@ try {
          Descrição:
         </label><br>
         <label>
-            <?php echo $objProtocoloDTO->getStrDescricao() ?>
+            <?= $objProtocoloDTO->getStrDescricao() ?>
         </label>
         </div>      
   </div>

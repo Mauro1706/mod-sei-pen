@@ -4,10 +4,10 @@ require_once DIR_SEI_WEB.'/SEI.php';
 
 class ProcessarPendenciasRN extends InfraRN
 {
-    private $objGearmanWorker;
-    private $objPenDebug;
-    private $strGearmanServidor;
-    private $strGearmanPorta;
+    private $objGearmanWorker = null;
+    private $objPenDebug = null;
+    private $strGearmanServidor = null;
+    private $strGearmanPorta = null;
 
     const TIMEOUT_PROCESSAMENTO_JOB = 5400; // valores em segundos, 5400 = 90 minutos
     const TIMEOUT_PROCESSAMENTO_EVENTOS = 300000; // valores em milisegundos, 300000 = 5 minutos
@@ -43,11 +43,11 @@ class ProcessarPendenciasRN extends InfraRN
       $this->strGearmanPorta = trim(@$arrObjGearman["Porta"] ?: null);
 
     if (!@file_get_contents($this->strLocalizacaoCertificadoDigital)) {
-        throw new InfraException("Módulo do Tramita: Certificado digital de autenticação do serviço de integração do Tramita.GOV.BR não encontrado.");
+        throw new InfraException("Certificado digital de autenticação do serviço de integração do Tramita.GOV.BR não encontrado.");
     }
 
     if (InfraString::isBolVazia($this->strSenhaCertificadoDigital)) {
-        throw new InfraException('Módulo do Tramita: Dados de autenticação do serviço de integração do Tramita.GOV.BR não informados.');
+        throw new InfraException('Dados de autenticação do serviço de integração do Tramita.GOV.BR não informados.');
     }
   }
 
@@ -58,11 +58,9 @@ class ProcessarPendenciasRN extends InfraRN
      */
   private function inicializarGearman()
     {
-    if(!class_exists("GearmanWorker")) {
-        throw new InfraException(
-            "Módulo do Tramita: Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN./n" .
-            "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes"
-        );
+    if(!class_exists("GearmanWorker")){
+        throw new InfraException("Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN./n" .
+                                 "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes");
     }
 
       $this->objGearmanWorker = new GearmanWorker();
@@ -79,9 +77,7 @@ class ProcessarPendenciasRN extends InfraRN
         ini_set('max_execution_time', '0');
         ini_set('memory_limit', '-1');
 
-      if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()) {
-        return false;
-      }
+        PENIntegracao::verificarCompatibilidadeConfiguracoes();
         ModPenUtilsRN::simularLoginUnidadeRecebimento();
 
         $numProcID = getmygid();
@@ -91,18 +87,20 @@ class ProcessarPendenciasRN extends InfraRN
       while($this->objGearmanWorker->work())
         {
         try {
-          $numReturnCode = $this->objGearmanWorker->returnCode();
+            $numReturnCode = $this->objGearmanWorker->returnCode();
 
           switch ($numReturnCode) {
             case GEARMAN_SUCCESS:
+                break;
+
             case GEARMAN_TIMEOUT:
-                  //Nenhuma ação necessário, sendo que timeout é utilizado apenas para avaliação de sinal pcntl_signal de interrupção
+                    //Nenhuma ação necessário, sendo que timeout é utilizado apenas para avaliação de sinal pcntl_signal de interrupção
                 break;
 
             case GEARMAN_ERRNO:
-                    $strErro = "Erro no processamento de pendências do PEN. ErrorCode: $numReturnCode";
-                    LogSEI::getInstance()->gravar($strErro);
-                    $this->gravarLogDebug($strErro, 0);
+              $strErro = "Erro no processamento de pendências do PEN. ErrorCode: $numReturnCode";
+              LogSEI::getInstance()->gravar($strErro);
+              $this->gravarLogDebug($strErro, 0);
                 break;
 
             default:
@@ -116,10 +114,10 @@ class ProcessarPendenciasRN extends InfraRN
       }
 
         $numProcID = getmygid();
-        $this->gravarLogDebug("Finalização do processamento de tarefas do Barramento do Tramita GOV.BR (pid=$numProcID)", 0);
+        $this->gravarLogDebug("Finalização do processamento de tarefas do Barramento do PEN (pid=$numProcID)", 0);
     }
     catch(Exception $e) {
-        $strAssunto = 'Falha no processamento de pendências de trâmite do Tramita GOV.BR';
+        $strAssunto = 'Falha no processamento de pendências de trâmite do PEN';
         $strErro = 'Erro: '. InfraException::inspecionar($e);
         LogSEI::getInstance()->gravar($strAssunto."\n\n".$strErro);
         throw new InfraException($strAssunto."\n\n".$strErro, $e);
@@ -129,7 +127,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Envio de Processos
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function enviarProcesso($idTramite)
@@ -141,7 +139,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Envio de Componentes Digitais
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function enviarComponenteDigital($idTramite)
@@ -153,7 +151,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Recebimento de Recibo de Conclusão de Trâmite
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function receberReciboTramite($idTramite)
@@ -167,7 +165,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Recebimento de Processo ou Documento Avulso
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function receberProcedimento($idTramite)
@@ -200,7 +198,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Recebimento de Trâmites Recusados
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function receberTramitesRecusados($idTramite)
@@ -215,11 +213,10 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Recebimento de Componentes Digitais
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
-  public function receberComponenteDigital($idTramite)
-    {
+  public function receberComponenteDigital($idTramite) {
       $this->gravarLogDebug("Processando recebimento de componentes digitais [receberComponenteDigital] com IDT " . $idTramite, 0, true);
       // Caso receba mensagem indicando que foi realizado o recebimento dos componentes digitais, então o recibo de concluão deverá ser enviado
       $this->enviarReciboTramiteProcesso($idTramite);
@@ -229,7 +226,7 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Envio de Recibo de Trâmite
      *
-     * @param  object $idTramite Contexto com informações para processamento da tarefa
+     * @param object $idTramite Contexto com informações para processamento da tarefa
      * @return void
      */
   public function enviarReciboTramiteProcesso($idTramite)
@@ -243,134 +240,117 @@ class ProcessarPendenciasRN extends InfraRN
     /**
      * Processa a mensagem de pendência de Envio de Processo
      *
-     * @param  object $idProcedimento Contexto com informações para processamento da tarefa
+     * @param object $idProcedimento Contexto com informações para processamento da tarefa
      * @return void
      */
-  public function expedirBloco($idProcedimento)
+  public function expedirLote($idProcedimento)
     {
     try {
+
         $this->gravarLogDebug("Processando envio de protocolo [expedirProcedimento] com IDProcedimento " . $idProcedimento, 0, true);
         $numTempoInicialEnvio = microtime(true);
 
-        $objPenBlocoProcedimentoDTO = new PenBlocoProcessoDTO();
-        $objPenBlocoProcedimentoDTO->retNumIdRepositorioOrigem();
-        $objPenBlocoProcedimentoDTO->retNumIdUnidadeOrigem();
-        $objPenBlocoProcedimentoDTO->retNumIdRepositorioDestino();
-        $objPenBlocoProcedimentoDTO->retStrRepositorioDestino();
-        $objPenBlocoProcedimentoDTO->retNumIdUnidadeDestino();
-        $objPenBlocoProcedimentoDTO->retStrUnidadeDestino();
-        $objPenBlocoProcedimentoDTO->retDblIdProtocolo();
-        $objPenBlocoProcedimentoDTO->retNumIdBlocoProcesso();
-        $objPenBlocoProcedimentoDTO->retNumIdAtividade();
-        $objPenBlocoProcedimentoDTO->retNumIdBloco();
-        $objPenBlocoProcedimentoDTO->retNumIdUnidade();
-        $objPenBlocoProcedimentoDTO->retNumTentativas();
-        $objPenBlocoProcedimentoDTO->setDblIdProtocolo(intval($idProcedimento));
-        $objPenBlocoProcedimentoDTO->setNumIdAndamento(ProcessoEletronicoRN::$STA_SITUACAO_TRAMITE_INICIADO);
-        $objPenBlocoProcedimentoDTO->setNumMaxRegistrosRetorno(1);
+        $objPenLoteProcedimentoDTO = new PenLoteProcedimentoDTO();
+        $objPenLoteProcedimentoDTO->retNumIdRepositorioOrigem();
+        $objPenLoteProcedimentoDTO->retNumIdUnidadeOrigem();
+        $objPenLoteProcedimentoDTO->retNumIdRepositorioDestino();
+        $objPenLoteProcedimentoDTO->retStrRepositorioDestino();
+        $objPenLoteProcedimentoDTO->retNumIdUnidadeDestino();
+        $objPenLoteProcedimentoDTO->retStrUnidadeDestino();
+        $objPenLoteProcedimentoDTO->retDblIdProcedimento();
+        $objPenLoteProcedimentoDTO->retNumIdLote();
+        $objPenLoteProcedimentoDTO->retNumIdAtividade();
+        $objPenLoteProcedimentoDTO->retNumIdUnidade();
+        $objPenLoteProcedimentoDTO->retNumTentativas();
+        $objPenLoteProcedimentoDTO->setDblIdProcedimento(intval($idProcedimento));
+        $objPenLoteProcedimentoDTO->setNumIdAndamento(ProcessoEletronicoRN::$STA_SITUACAO_TRAMITE_NAO_INICIADO);
 
-        $objPenBlocoProcedimentoRN = new PenBlocoProcessoRN();
-        $objPenBlocoProcedimentoDTO = $objPenBlocoProcedimentoRN->consultar($objPenBlocoProcedimentoDTO);
+        $objPenLoteProcedimentoRN = new PenLoteProcedimentoRN();
+        $objPenLoteProcedimentoDTO = $objPenLoteProcedimentoRN->consultarLoteProcedimento($objPenLoteProcedimentoDTO);
 
-      if (!is_null($objPenBlocoProcedimentoDTO)) {
+      if(!is_null($objPenLoteProcedimentoDTO)){
 
-        // Ajuste na variável global $_SERVER['HTTPS'] para considerar a mesma configuração definida para o SEI
-        // e evitar erros na rotina validaHttps quando em execução por linha de comando
+          // Ajuste na variável global $_SERVER['HTTPS'] para considerar a mesma configuração definida para o SEI
+          // e evitar erros na rotina validaHttps quando em execução por linha de comando
         if (!isset($_SERVER['HTTP_USER_AGENT'])) {
             $bolHttps = ConfiguracaoSEI::getInstance()->getValor('SessaoSEI', 'https');
             $_SERVER['HTTPS'] = $bolHttps ? "on" : null;
         }
 
-        //Registra tentativa de envio e cancela o trâmite caso ultrapasse os valores permitidos
-        $objConfiguracaoModPEN = ConfiguracaoModPEN::getInstance();
-        $numTentativasErroMaximo = $objConfiguracaoModPEN->getValor("PEN", "NumeroTentativasErro", false, ProcessoEletronicoRN::WS_TENTATIVAS_ERRO);
-        $numTentativasErroMaximo = (is_numeric($numTentativasErroMaximo)) ? intval($numTentativasErroMaximo) : ProcessoEletronicoRN::WS_TENTATIVAS_ERRO;
-        $numTentativasProcesso = $objPenBlocoProcedimentoDTO->getNumTentativas() ?: 0;
+          //Registra tentativa de envio e cancela o trâmite caso ultrapasse os valores permitidos
+          $objConfiguracaoModPEN = ConfiguracaoModPEN::getInstance();
+          $numTentativasErroMaximo = $objConfiguracaoModPEN->getValor("PEN", "NumeroTentativasErro", false, ProcessoEletronicoRN::WS_TENTATIVAS_ERRO);
+          $numTentativasErroMaximo = (is_numeric($numTentativasErroMaximo)) ? intval($numTentativasErroMaximo) : ProcessoEletronicoRN::WS_TENTATIVAS_ERRO;
+          $numTentativasProcesso = $objPenLoteProcedimentoDTO->getNumTentativas() ?: 0;
 
-        if ($numTentativasErroMaximo >= $numTentativasProcesso + 1) {
-            $objPenBlocoProcedimentoRN->registrarTentativaEnvio($objPenBlocoProcedimentoDTO);
+        if($numTentativasErroMaximo >= $numTentativasProcesso + 1){
+            $objPenLoteProcedimentoRN->registrarTentativaEnvio($objPenLoteProcedimentoDTO);
 
             $objExpedirProcedimentoDTO = new ExpedirProcedimentoDTO();
-            $objExpedirProcedimentoDTO->setNumIdRepositorioOrigem($objPenBlocoProcedimentoDTO->getNumIdRepositorioOrigem());
-            $objExpedirProcedimentoDTO->setNumIdUnidadeOrigem($objPenBlocoProcedimentoDTO->getNumIdUnidadeOrigem());
+            $objExpedirProcedimentoDTO->setNumIdRepositorioOrigem($objPenLoteProcedimentoDTO->getNumIdRepositorioOrigem());
+            $objExpedirProcedimentoDTO->setNumIdUnidadeOrigem($objPenLoteProcedimentoDTO->getNumIdUnidadeOrigem());
 
-            $objExpedirProcedimentoDTO->setNumIdRepositorioDestino($objPenBlocoProcedimentoDTO->getNumIdRepositorioDestino());
-            $objExpedirProcedimentoDTO->setStrRepositorioDestino($objPenBlocoProcedimentoDTO->getStrRepositorioDestino());
-            $objExpedirProcedimentoDTO->setNumIdUnidadeDestino($objPenBlocoProcedimentoDTO->getNumIdUnidadeDestino());
-            $objExpedirProcedimentoDTO->setStrUnidadeDestino($objPenBlocoProcedimentoDTO->getStrUnidadeDestino());
+            $objExpedirProcedimentoDTO->setNumIdRepositorioDestino($objPenLoteProcedimentoDTO->getNumIdRepositorioDestino());
+            $objExpedirProcedimentoDTO->setStrRepositorioDestino($objPenLoteProcedimentoDTO->getStrRepositorioDestino());
+            $objExpedirProcedimentoDTO->setNumIdUnidadeDestino($objPenLoteProcedimentoDTO->getNumIdUnidadeDestino());
+            $objExpedirProcedimentoDTO->setStrUnidadeDestino($objPenLoteProcedimentoDTO->getStrUnidadeDestino());
             $objExpedirProcedimentoDTO->setArrIdProcessoApensado(null);
             $objExpedirProcedimentoDTO->setBolSinUrgente(false);
-            $objExpedirProcedimentoDTO->setDblIdProcedimento($objPenBlocoProcedimentoDTO->getDblIdProtocolo());
+            $objExpedirProcedimentoDTO->setDblIdProcedimento($objPenLoteProcedimentoDTO->getDblIdProcedimento());
             $objExpedirProcedimentoDTO->setNumIdMotivoUrgencia(null);
-            $objExpedirProcedimentoDTO->setBolSinProcessamentoEmBloco(true);
-            $objExpedirProcedimentoDTO->setNumIdBloco($objPenBlocoProcedimentoDTO->getNumIdBlocoProcesso());
-            $objExpedirProcedimentoDTO->setNumIdAtividade($objPenBlocoProcedimentoDTO->getNumIdAtividade());
-            $objExpedirProcedimentoDTO->setNumIdUnidade($objPenBlocoProcedimentoDTO->getNumIdUnidade());
+            $objExpedirProcedimentoDTO->setBolSinProcessamentoEmLote(true);
+            $objExpedirProcedimentoDTO->setNumIdLote($objPenLoteProcedimentoDTO->getNumIdLote());
+            $objExpedirProcedimentoDTO->setNumIdAtividade($objPenLoteProcedimentoDTO->getNumIdAtividade());
+            $objExpedirProcedimentoDTO->setNumIdUnidade($objPenLoteProcedimentoDTO->getNumIdUnidade());
 
             $objExpedirProcedimentoRN = new ExpedirProcedimentoRN();
             $objExpedirProcedimentoRN->expedirProcedimento($objExpedirProcedimentoDTO);
 
-            $numIDT = $objPenBlocoProcedimentoDTO->getDblIdProtocolo();
             $numTempoTotalEnvio = round(microtime(true) - $numTempoInicialEnvio, 2);
             $this->gravarLogDebug("Finalizado o envio de protocolo com IDProcedimento $numIDT(Tempo total: {$numTempoTotalEnvio}s)", 0, true);
+
         } else {
-            $objPenBlocoProcedimentoRN->desbloquearProcessoBloco($objPenBlocoProcedimentoDTO->getDblIdProtocolo());
+            $objPenLoteProcedimentoRN->desbloquearProcessoLote($objPenLoteProcedimentoDTO->getDblIdProcedimento());
         }
       }
     } catch (\Exception $e) {
-        throw new InfraException('Módulo do Tramita: Falha ao expedir processso em bloco.', $e);
+        throw new InfraException('Falha ao expedir processso em lote.', $e);
     }
   }
 
   private function configurarCallbacks()
     {
-      $this->objGearmanWorker->addFunction(
-          "enviarProcesso", function ($job): void {
-              $this->enviarProcesso($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("enviarProcesso", function($job) {
+          $this->enviarProcesso($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "enviarComponenteDigital", function ($job): void {
-              $this->enviarComponenteDigital($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("enviarComponenteDigital", function($job) {
+          $this->enviarComponenteDigital($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "receberReciboTramite", function ($job): void {
-              $this->receberReciboTramite($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("receberReciboTramite", function($job) {
+          $this->receberReciboTramite($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "receberProcedimento", function ($job): void {
-              $this->receberProcedimento($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("receberProcedimento", function($job) {
+          $this->receberProcedimento($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "receberTramitesRecusados", function ($job): void {
-              $this->receberTramitesRecusados($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("receberTramitesRecusados", function($job) {
+          $this->receberTramitesRecusados($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "receberComponenteDigital", function ($job): void {
-              $this->receberComponenteDigital($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("receberComponenteDigital", function($job) {
+          $this->receberComponenteDigital($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "enviarReciboTramiteProcesso", function ($job): void {
-              $this->enviarReciboTramiteProcesso($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("enviarReciboTramiteProcesso", function($job) {
+          $this->enviarReciboTramiteProcesso($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
-      $this->objGearmanWorker->addFunction(
-          "expedirBloco", function ($job): void {
-              $this->expedirBloco($job->workload());
-          }, null, self::TIMEOUT_PROCESSAMENTO_JOB
-      );
+      $this->objGearmanWorker->addFunction("expedirLote", function($job) {
+          $this->expedirLote($job->workload());
+      }, null, self::TIMEOUT_PROCESSAMENTO_JOB);
 
   }
 
@@ -386,19 +366,18 @@ class ProcessarPendenciasRN extends InfraRN
      */
   private static function verificarGearmanAtivo($parStrServidor, $parStrPorta)
     {
+      // Verifica se existe um servidor do Gearman ativo para conexão
+      $bolAtivo = false;
+
     try {
-      if(!class_exists("GearmanClient")) {
-        throw new InfraException(
-            "Módulo do Tramita: Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN (GearmanClient). " .
-            "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes"
-        );
+      if(!class_exists("GearmanClient")){
+        throw new InfraException("Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN (GearmanClient). " .
+            "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes");
       }
 
-      if(!class_exists("GearmanWorker")) {
-          throw new InfraException(
-              "Módulo do Tramita: Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN (GearmanWorker). " .
-              "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes"
-          );
+      if(!class_exists("GearmanWorker")){
+          throw new InfraException("Não foi possível localizar as bibliotecas do PHP para conexão ao GEARMAN (GearmanWorker). " .
+              "Verifique os procedimentos de instalação do mod-sei-pen para maiores detalhes");
       }
 
         $objGearmanClient = new GearmanClient();
@@ -406,7 +385,7 @@ class ProcessarPendenciasRN extends InfraRN
         return $objGearmanClient->ping("health");
 
     } catch (\Exception $e) {
-        $strMensagem = "Alerta: Não foi possível ativar processamento assíncrono de tarefas do Barramento Tramita GOV.BR via Gearman";
+        $strMensagem = "Alerta: Não foi possível ativar processamento assíncrono de tarefas do Barramento PEN via Gearman";
         $strDetalhes = "Devido ao impedimento, o processamento das tarefas será realizado diretamente pelo agendamento de tarefas";
         $objInfraException = new InfraException($strMensagem, $e, $strDetalhes);
         LogSEI::getInstance()->gravar(InfraException::inspecionar($objInfraException), LogSEI::$AVISO);
@@ -428,26 +407,26 @@ class ProcessarPendenciasRN extends InfraRN
       $strGearmanServidor = trim(@$arrObjGearman["Servidor"] ?: null);
       $strGearmanPorta = trim(@$arrObjGearman["Porta"] ?: null);
 
-    if(!empty($strGearmanServidor)) {
+    if(!empty($strGearmanServidor)){
       try {
         if(self::verificarGearmanAtivo($strGearmanServidor, $strGearmanPorta)) {
           for ($worker=0; $worker < $parNumQtdeWorkers; $worker++) {
             $strComandoIdentificacaoWorker = sprintf(self::COMANDO_IDENTIFICACAO_WORKER_ID, $worker);
             exec($strComandoIdentificacaoWorker, $strSaida, $numCodigoResposta);
 
-            if($numCodigoResposta != 0) {
-                  $strLocalizacaoScript = realpath(self::LOCALIZACAO_SCRIPT_WORKER);
-                  $strPhpExec = empty(PHP_BINARY) ? "php" : PHP_BINARY;
-                  $strPhpIni = php_ini_loaded_file();
-                  $strPhpIni = $strPhpIni ? "-c $strPhpIni" : "";
+            if($numCodigoResposta != 0){
+                 $strLocalizacaoScript = realpath(self::LOCALIZACAO_SCRIPT_WORKER);
+                 $strPhpExec = empty(PHP_BINARY) ? "php" : PHP_BINARY;
+                 $strPhpIni = php_ini_loaded_file();
+                 $strPhpIni = $strPhpIni ? "-c $strPhpIni" : "";
 
-                  $strComandoProcessamentoTarefas = sprintf(
-                      self::COMANDO_EXECUCAO_WORKER,
-                      $strPhpExec,             // Binário do PHP utilizado no contexto de execução do script atual (ex: /usr/bin/php)
-                      $strPhpIni,              // Arquivo de configucação o PHP utilizado no contexto de execução do script atual (ex: /etc/php.ini)
-                      $strLocalizacaoScript,   // Path absoluto do script de processamento de tarefas do Barramento
-                      $worker,                 // Identificador sequencial do processo paralelo a ser iniciado
-                      "/dev/null"              // Localização de log adicinal para registros de falhas não salvas pelo SEI no BDsss
+                 $strComandoProcessamentoTarefas = sprintf(
+                     self::COMANDO_EXECUCAO_WORKER,
+                     $strPhpExec,             // Binário do PHP utilizado no contexto de execução do script atual (ex: /usr/bin/php)
+                     $strPhpIni,              // Arquivo de configucação o PHP utilizado no contexto de execução do script atual (ex: /etc/php.ini)
+                     $strLocalizacaoScript,   // Path absoluto do script de processamento de tarefas do Barramento
+                     $worker,                 // Identificador sequencial do processo paralelo a ser iniciado
+                     "/dev/null"              // Localização de log adicinal para registros de falhas não salvas pelo SEI no BDsss
                   );
 
                   shell_exec($strComandoProcessamentoTarefas);
@@ -460,7 +439,7 @@ class ProcessarPendenciasRN extends InfraRN
         $bolInicializado = $numCodigoRespostaAtivacao == 0;
 
       } catch (\Exception $e) {
-          $strMensagem = "Alerta: Não foi possível ativar processamento assíncrono de tarefas do Barramento Tramita GOV.BR via Gearman";
+          $strMensagem = "Alerta: Não foi possível ativar processamento assíncrono de tarefas do Barramento PEN via Gearman";
           $strDetalhes = "Devido ao impedimento, o processamento das tarefas será realizado diretamente pelo agendamento de tarefas";
           $objInfraException = new InfraException($strMensagem, $e, $strDetalhes);
           LogSEI::getInstance()->gravar(InfraException::inspecionar($objInfraException), LogSEI::$ERRO);
