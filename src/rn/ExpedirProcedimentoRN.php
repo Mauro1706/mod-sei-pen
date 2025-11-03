@@ -37,30 +37,30 @@ class ExpedirProcedimentoRN extends InfraRN
     //Verso com mudana na API relacionada  obrigatoriedade do carimbo de publicao
     const VERSAO_CARIMBO_PUBLICACAO_OBRIGATORIO = '3.0.7';
 
-    private $objProcessoEletronicoRN;
-    private $objParticipanteRN;
-    private $objProcedimentoRN;
-    private $objProtocoloRN;
-    private $objDocumentoRN;
-    private $objAtividadeRN;
-    private $objUsuarioRN;
-    private $objUnidadeRN;
-    private $objOrgaoRN;
-    private $objSerieRN;
-    private $objAnexoRN;
-    private $objPenParametroRN;
-    private $objPenRelTipoDocMapEnviadoRN;
-    private $objAssinaturaRN;
-    private $barraProgresso;
-    private $objProcedimentoAndamentoRN;
-    private $fnEventoEnvioMetadados;
-    private $objPenDebug;
-    private $objCacheMetadadosProtocolo=[];
+    protected $objProcessoEletronicoRN;
+    protected $objParticipanteRN;
+    protected $objProcedimentoRN;
+    protected $objProtocoloRN;
+    protected $objDocumentoRN;
+    protected $objAtividadeRN;
+    protected $objUsuarioRN;
+    protected $objUnidadeRN;
+    protected $objOrgaoRN;
+    protected $objSerieRN;
+    protected $objAnexoRN;
+    protected $objPenParametroRN;
+    protected $objPenRelTipoDocMapEnviadoRN;
+    protected $objAssinaturaRN;
+    protected $barraProgresso;
+    protected $objProcedimentoAndamentoRN;
+    protected $fnEventoEnvioMetadados;
+    protected $objPenDebug;
+    protected $objCacheMetadadosProtocolo=[];
 
-    private $arrPenMimeTypes = ["application/pdf", "application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.formula", "application/vnd.oasis.opendocument.spreadsheet", "application/vnd.oasis.opendocument.presentation", "text/xml", "text/rtf", "text/html", "text/plain", "text/csv", "image/gif", "image/jpeg", "image/png", "image/svg+xml", "image/tiff", "image/bmp", "audio/mp4", "audio/midi", "audio/ogg", "audio/vnd.wave", "video/avi", "video/mpeg", "video/mp4", "video/ogg", "video/webm"];
+    protected $arrPenMimeTypes = ["application/pdf", "application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.formula", "application/vnd.oasis.opendocument.spreadsheet", "application/vnd.oasis.opendocument.presentation", "text/xml", "text/rtf", "text/html", "text/plain", "text/csv", "image/gif", "image/jpeg", "image/png", "image/svg+xml", "image/tiff", "image/bmp", "audio/mp4", "audio/midi", "audio/ogg", "audio/vnd.wave", "video/avi", "video/mpeg", "video/mp4", "video/ogg", "video/webm"];
 
 
-    private $contadorDaBarraDeProgresso;
+    protected $contadorDaBarraDeProgresso;
 
   public function __construct()
     {
@@ -93,7 +93,7 @@ class ExpedirProcedimentoRN extends InfraRN
       return BancoSEI::getInstance();
   }
 
-  private function gravarLogDebug($parStrMensagem, $parNumIdentacao = 0, $parBolLogTempoProcessamento = true)
+  protected function gravarLogDebug($parStrMensagem, $parNumIdentacao = 0, $parBolLogTempoProcessamento = true)
     {
       $this->objPenDebug->gravar($parStrMensagem, $parNumIdentacao, $parBolLogTempoProcessamento);
   }
@@ -312,6 +312,34 @@ class ExpedirProcedimentoRN extends InfraRN
 
               $this->gravarLogDebug(sprintf('Trâmite do processo %s foi concluído', $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado()), 2);
 
+              // Gravar atividae de envio multiplos orgaos
+              try {
+                $objProcessoEletronicoRN = new ProcessoEletronicoRN();
+                if ($objProcessoEletronicoRN->validarProcessoMultiplosOrgaos($objProcedimentoDTO->getDblIdProcedimento())) {
+                  $idTarefa = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS);
+
+                  $objAtividadeDTO = new AtividadeDTO();
+                  $objAtividadeDTO->setDblIdProtocolo($dblIdProcedimento);
+                  $objAtividadeDTO->setDthConclusao(null);
+                  $objAtividadeDTO->setDistinct(true);
+                  $objAtividadeDTO->setNumIdTarefa($idTarefa);
+                  $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+                  $objAtividadeDTO->retTodos();
+
+                  $objAtividadeRN = new AtividadeRN();
+                  $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+                  if($objAtividadeDTO) {
+                    $objAtividadeRN = new AtividadeRN();
+                    $objAtividadeRN->concluirRN0726([$objAtividadeDTO]);
+                  }
+
+                  $objProcessoEletronicoRN->gravarAtividadeMuiltiplosOrgaos($objProcedimentoDTO, $objTramite->IDT, ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS);
+                }
+              } catch (\Exception $e) {
+                $this->gravarLogDebug("Erro ao gravar atividade múltiplos órgãos: $e", 0, true);
+              }
+
               $numTempoTotalRecebimento = round(microtime(true) - $numTempoInicialRecebimento, 2);
               $this->gravarLogDebug("Finalizado o envio de protocolo número " . $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado() . " (Tempo total: {$numTempoTotalRecebimento}s)", 0, true);
           }
@@ -479,7 +507,7 @@ class ExpedirProcedimentoRN extends InfraRN
      *
      * @return stdClass Metadados do Processo
      */
-  private function consultarMetadadosPEN($parDblIdProcedimento)
+  protected function consultarMetadadosPEN($parDblIdProcedimento)
     {
       $objMetadadosProtocolo = null;
     if(array_key_exists($parDblIdProcedimento, $this->objCacheMetadadosProtocolo)) {
@@ -570,7 +598,7 @@ class ExpedirProcedimentoRN extends InfraRN
       return $this->objProcessoEletronicoRN->consultarMotivosUrgencia();
   }
 
-  private function construirCabecalho(ExpedirProcedimentoDTO $objExpedirProcedimentoDTO, $strNumeroRegistro, $dblIdProcedimento = null)
+  protected function construirCabecalho(ExpedirProcedimentoDTO $objExpedirProcedimentoDTO, $strNumeroRegistro, $dblIdProcedimento = null)
     {
     if(!isset($objExpedirProcedimentoDTO)) {
         throw new InfraException('Módulo do Tramita: Parâmetro $objExpedirProcedimentoDTO não informado.');
@@ -2492,7 +2520,7 @@ class ExpedirProcedimentoRN extends InfraRN
   }
 
 
-  private function validarParametrosExpedicao(InfraException $objInfraException, ExpedirProcedimentoDTO $objExpedirProcedimentoDTO)
+  protected function validarParametrosExpedicao(InfraException $objInfraException, ExpedirProcedimentoDTO $objExpedirProcedimentoDTO)
     {
     if(!isset($objExpedirProcedimentoDTO)) {
         $objInfraException->adicionarValidacao('Parâmetro $objExpedirProcedimentoDTO não informado.');
@@ -3219,7 +3247,7 @@ class ExpedirProcedimentoRN extends InfraRN
      *
      * @param int $dblIdProtocolo
      */
-  private function atualizarPenProtocolo($dblIdProtocolo = 0)
+  protected function atualizarPenProtocolo($dblIdProtocolo = 0)
     {
 
       $objProtocoloDTO = new PenProtocoloDTO();
@@ -3503,12 +3531,12 @@ class ExpedirProcedimentoRN extends InfraRN
   }
 
 
-  private function consultarTramitesAnteriores($parStrNumeroRegistro)
+  protected function consultarTramitesAnteriores($parStrNumeroRegistro)
     {
       return isset($parStrNumeroRegistro) ? $this->objProcessoEletronicoRN->consultarTramites(null, $parStrNumeroRegistro) : null;
   }
 
-  private function necessitaCancelamentoTramiteAnterior($parArrTramitesAnteriores)
+  protected function necessitaCancelamentoTramiteAnterior($parArrTramitesAnteriores)
     {
     if(!empty($parArrTramitesAnteriores) && is_array($parArrTramitesAnteriores)) {
         $objUltimoTramite = $parArrTramitesAnteriores[count($parArrTramitesAnteriores) - 1];
@@ -3612,7 +3640,7 @@ class ExpedirProcedimentoRN extends InfraRN
       $this->fnEventoEnvioMetadados = $callback;
   }
 
-  private function lancarEventoEnvioMetadados($parNumIdTramite)
+  protected function lancarEventoEnvioMetadados($parNumIdTramite)
     {
     if(isset($this->fnEventoEnvioMetadados)) {
         $evento = $this->fnEventoEnvioMetadados;

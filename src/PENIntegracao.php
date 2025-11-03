@@ -224,6 +224,17 @@ class PENIntegracao extends SeiIntegracao
     $objProcessoEletronicoDTO->setDblIdProcedimento($dblIdProcedimento);
     $objTramiteBD = new TramiteBD(BancoSEI::getInstance());
 
+    $objTramiteDTO = $objTramiteBD->consultarPrimeiroTramite($objProcessoEletronicoDTO);
+
+    if ($bolFlagAberto && !is_null($objTramiteDTO)) {
+      $objTramiteDTO = $objTramiteDTO->getStrStaTipoTramite() == ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO;
+      if ($objTramiteDTO) {
+        $strAcoesProcedimento .= '<a href="' . $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1')) . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
+        $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/refresh_icon_no_background.svg", $this->getDiretorioImagens()) . '  alt="Sincronizar Processo" title="Sincronizar Processo" />';
+        $strAcoesProcedimento .= '</a>';
+      }
+    }
+
     $objTramiteDTO = $objTramiteBD->consultarUltimoTramite($objProcessoEletronicoDTO, ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO);
 
     if ($bolFlagAberto && !is_null($objTramiteDTO)){
@@ -292,8 +303,10 @@ class PENIntegracao extends SeiIntegracao
     }
 
       $arrStrIcone = $this->montarIconeRecusa($arrDblIdProcedimento, $arrStrIcone);
+      $arrStrIcone = $this->montarIconeTramite($arrDblIdProcedimento, $arrStrIcone);
+      $arrStrIcone = $this->montarIconeSincronizacao($arrDblIdProcedimento, $arrStrIcone);
 
-      return $this->montarIconeTramite($arrDblIdProcedimento, $arrStrIcone);
+      return $arrStrIcone;
   }
 
   private function montarIconeRecusa($arrDblIdProcedimento = [], $arrStrIcone = [])
@@ -379,6 +392,58 @@ class PENIntegracao extends SeiIntegracao
     }
 
       return $arrStrIcone;
+  }
+
+  private function montarIconeSincronizacao($arrDblIdProcedimento = [], $arrStrIcone = [])
+  {
+    foreach ($arrDblIdProcedimento as $dblIdProcedimento) {
+      $arrTiProcessoEletronico = [
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS)
+      ];
+
+      $objAtividadeDTO = new AtividadeDTO();
+      $objAtividadeDTO->setDblIdProtocolo($dblIdProcedimento);
+      $objAtividadeDTO->setNumIdTarefa($arrTiProcessoEletronico, InfraDTO::$OPER_IN);
+      $objAtividadeDTO->setOrdDthAbertura(InfraDTO::$TIPO_ORDENACAO_DESC);
+      $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+      $objAtividadeDTO->retNumIdAtividade();
+      $objAtividadeDTO->retNumIdTarefa();
+      $objAtividadeDTO->retDblIdProcedimentoProtocolo();
+    
+      $objAtividadeRN = new AtividadeRN();
+      $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+      if($objAtividadeDTO !== null) {
+        $arrayIcone = [];
+        switch ($objAtividadeDTO->getNumIdTarefa()) {
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS):
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS):
+              $arrayIcone = ['<img src="' . $this->getDiretorioImagens() . '/refresh_icon_no_background.png" title="Um sincronização de tramite para esse processo foi solicitada" />'];
+                break;
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
+              $arrayIcone = ['<img src="' . $this->getDiretorioImagens() . '/refresh_icon_no_background_green.png" title="Um sincronização de tramite para esse processo foi solicitada" />'];
+                break;
+            default:
+                break;
+        }
+
+        if (empty($arrayIcone)) {
+          continue;
+        }
+
+        if (!isset($arrStrIcone[$dblIdProcedimento])) {
+          $arrStrIcone[$dblIdProcedimento] = $arrayIcone;
+        } else {
+          $arrStrIcone[$dblIdProcedimento] = array_merge($arrStrIcone[$dblIdProcedimento], $arrayIcone);
+        }
+      }
+    }
+
+    return $arrStrIcone;
   }
   
   private function consultarProcessoRecebido($dblIdProtocolo)
@@ -486,6 +551,40 @@ class PENIntegracao extends SeiIntegracao
       }
     }
 
+      $arrTiProcessoEletronico = [
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS),
+        ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS)
+      ];
+
+      $objAtividadeDTO = new AtividadeDTO();
+      $objAtividadeDTO->setDblIdProtocolo($dblIdProcedimento);
+      $objAtividadeDTO->setNumIdTarefa($arrTiProcessoEletronico, InfraDTO::$OPER_IN);
+      $objAtividadeDTO->setOrdDthAbertura(InfraDTO::$TIPO_ORDENACAO_DESC);
+      $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+      $objAtividadeDTO->retNumIdAtividade();
+      $objAtividadeDTO->retNumIdTarefa();
+      $objAtividadeDTO->retDblIdProcedimentoProtocolo();
+    
+      $objAtividadeRN = new AtividadeRN();
+      $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+      if ($objAtividadeDTO !== null) {
+        switch ($objAtividadeDTO->getNumIdTarefa()) {
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS):
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS):
+              $arrObjArvoreAcaoItemAPI[] = $this->getObjArvoreAcaoSincronizadoPendente($dblIdProcedimento);
+                break;
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
+            case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
+              $arrObjArvoreAcaoItemAPI[] = $this->getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento);
+                break;
+            default:
+                break;
+        }
+      }
+
       return $arrObjArvoreAcaoItemAPI;
   }
 
@@ -517,6 +616,40 @@ class PENIntegracao extends SeiIntegracao
 
       $objArvoreAcaoItemAPI->setTarget(null);
       $objArvoreAcaoItemAPI->setHref('javascript:alert(\'Um trâmite para esse processo foi enviado\');');
+
+      $objArvoreAcaoItemAPI->setSinHabilitado('S');
+
+      return $objArvoreAcaoItemAPI;
+  }
+
+  private function getObjArvoreAcaoSincronizadoPendente($dblIdProcedimento)
+    {
+      $objArvoreAcaoItemAPI = new ArvoreAcaoItemAPI();
+      $objArvoreAcaoItemAPI->setTipo('MD_SINC_PROCESSO_PEDIDO');
+      $objArvoreAcaoItemAPI->setId('MD_SINC_PROCESSO_' . $dblIdProcedimento);
+      $objArvoreAcaoItemAPI->setIdPai($dblIdProcedimento);
+      $objArvoreAcaoItemAPI->setTitle('Processo pendente de sincronização');
+      $objArvoreAcaoItemAPI->setIcone($this->getDiretorioImagens() . '/refresh_icon_no_background.png');
+
+      $objArvoreAcaoItemAPI->setTarget(null);
+      $objArvoreAcaoItemAPI->setHref('javascript:alert(\'Um trâmite para esse processo foi sincronizado\');');
+
+      $objArvoreAcaoItemAPI->setSinHabilitado('S');
+
+      return $objArvoreAcaoItemAPI;
+  }
+
+  private function getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento)
+    {
+      $objArvoreAcaoItemAPI = new ArvoreAcaoItemAPI();
+      $objArvoreAcaoItemAPI->setTipo('MD_SINC_PROCESSO_FINALIZADO');
+      $objArvoreAcaoItemAPI->setId('MD_SINC_PROCESSO_' . $dblIdProcedimento);
+      $objArvoreAcaoItemAPI->setIdPai($dblIdProcedimento);
+      $objArvoreAcaoItemAPI->setTitle('Processo sincronizado');
+      $objArvoreAcaoItemAPI->setIcone($this->getDiretorioImagens() . '/refresh_icon_no_background_green.png');
+
+      $objArvoreAcaoItemAPI->setTarget(null);
+      $objArvoreAcaoItemAPI->setHref('javascript:alert(\'Um trâmite para esse processo foi sincronizado\');');
 
       $objArvoreAcaoItemAPI->setSinHabilitado('S');
 
@@ -789,6 +922,10 @@ class PENIntegracao extends SeiIntegracao
 
       case 'pen_procedimento_cancelar_expedir':
           include_once __DIR__ . '/pen_procedimento_cancelar_expedir.php';
+          break;
+      
+      case 'pen_procedimento_sincronizar':
+          include_once __DIR__ . '/pen_procedimento_sincronizar.php';
           break;
 
       case 'pen_procedimento_expedido_listar':
