@@ -2137,7 +2137,8 @@ class PenAtualizarSipRN extends InfraRN
 
       $idMenuTramita = $objItemMenuDTO->getNumIdItemMenu();
       $numIdRecurso = $this->criarRecurso('pen_procedimento_expedido_listar', 'Processos em Tramitação Externa', $numIdSistema);
-
+      ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_procedimento_expedido_listar');
+      
       $idMenuProcessoTramitadosExterno = $this->criarMenu('Processos em Tramitação Externa', 57, $idMenuTramita, $numIdMenu, $numIdRecurso, $numIdSistema);
       $this->cadastrarRelPerfilItemMenu($idPerfilBasico, $numIdRecurso, $numIdMenu, $idMenuProcessoTramitadosExterno);
       $this->excluirRelPerfilItemMenu($idPerfilAdm, $numIdRecurso, $numIdMenu, $idMenuProcessoTramitadosExterno);
@@ -2145,7 +2146,6 @@ class PenAtualizarSipRN extends InfraRN
       $this->renomearRecurso($numIdSistema, 'pen_expedir_lote', 'pen_expedir_bloco');
 
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_map_envio_parcial_visualizar');
-      ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_procedimento_expedido_listar');
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'md_pen_tramita_em_bloco');
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_expedir_bloco');
       ScriptSip::removerRecursoPerfil($numIdSistema, 'pen_expedir_bloco', $idPerfilAdm);
