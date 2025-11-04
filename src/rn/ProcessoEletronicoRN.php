@@ -824,6 +824,7 @@ class ProcessoEletronicoRN extends InfraRN
       $erroRequest = json_decode($e->getMessage());
       if ($erroRequest != null) {
           $mensagem = "Falha no envio externo do processo. Erro: {$erroRequest->codigoErro} - {$erroRequest->message}";
+          $mensagem = mb_convert_encoding($mensagem, 'ISO-8859-1', 'UTF-8');
       }
         $detalhes = $this->tratarFalhaWebService($e);
         throw new InfraException($mensagem, $e, $detalhes);
@@ -2963,8 +2964,6 @@ class ProcessoEletronicoRN extends InfraRN
         'exception' => $e->getMessage(),
         'details' => $e->hasResponse() ? (string) $e->getResponse()->getBody() : 'No response body'
       ], JSON_UNESCAPED_UNICODE);      
-      
-      $message = mb_convert_encoding($message, 'ISO-8859-1', 'UTF-8');  
           
       throw new Exception($message);  
 
