@@ -6,7 +6,7 @@ As melhorias entregues em cada uma das versões são cumulativas, ou seja, cont�
 
 ## Compatibilidade de versões
 * O módulo é compatível com a seguinte versão do **SEI**:
-  * SEI 5.0.0 e 5.0.1
+  * SEI 5.0.0, 5.0.1, 5.0.2 e 5.0.3
     
 Para maiores informações sobre os procedimentos de instalação ou atualização, acesse os seguintes documentos localizados no pacote de distribuição mod-sei-pen-VERSAO.zip:
 > Atenção: É impreterível seguir rigorosamente o disposto no README.md do Módulo para instalação ou atualização com sucesso.
@@ -21,13 +21,11 @@ Todas as atualizações podem incluir itens referentes à segurança, requisito 
 
 #### Nesta versão, foram corrigidos os seguintes erros:
 
-* **aaaaaaa:** aaaaaaa. [#000](https://github.com/pengovbr/mod-sei-pen/issues/000);
+* **AGU - Evolução do endpoint para o último trâmite:** Permite que o órgão destinatário solicite ao rementente a reprodução do último trâmite com sucesso para reenvio dos componentes digitais. [#872](https://github.com/pengovbr/mod-sei-pen/issues/872);
 
-* **aaaaaaa:** aaaaaaa. [#000](https://github.com/pengovbr/mod-sei-pen/issues/000);
+* **Erro ao cancelar documento que contenha multiplos componentes digitais:** Corrige erro de cancelar múltiplos componentes digitais. O erro em tela era: "Falha no envio externo do processo. Erro: 0047 - Inconsistência identificada no documento de ordem '1' do processo tramitado por este NRE, '0000025656262025', com protocolo '13990.811212/2020-00': hash de ao menos um componente digital não confere ". Agora permite o cancelamento do mesmo. [#882](https://github.com/pengovbr/mod-sei-pen/issues/882);
 
-* **aaaaaaa:** aaaaaaa. [#000](https://github.com/pengovbr/mod-sei-pen/issues/000);
-
-
+* **Correção da paginação da tela Processos em Tramitação Externa - Versão 4.0.2:** A paginação da tela Processos em Tramitação Externa (Menu -> Tramita GOV.BR -> Processos em Tramitação Externa), foi corrigida. [#929](https://github.com/pengovbr/mod-sei-pen/issues/929);
 
 #### Instruções
 
