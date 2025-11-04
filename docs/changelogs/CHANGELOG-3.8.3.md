@@ -28,6 +28,8 @@ Todas as atualizações podem incluir itens referentes à segurança, requisito 
 
 * **Erro ao cancelar documento que contenha multiplos componentes digitais:** Corrige erro de cancelar múltiplos componentes digitais. O erro em tela era: "Falha no envio externo do processo. Erro: 0047 - Inconsistência identificada no documento de ordem '1' do processo tramitado por este NRE, '0000025656262025', com protocolo '13990.811212/2020-00': hash de ao menos um componente digital não confere ". Agora permite o cancelamento do mesmo. [#882](https://github.com/pengovbr/mod-sei-pen/issues/882);
 
+* **Recuperação do padrão de mensagem de erro exibida na versão 3.8.1** Exibe detalhamento dos erros ao tentar enviar um trâmite. [#914](https://github.com/pengovbr/mod-sei-pen/issues/914);
+
 * **Erro que permite que o destinarário receba documentos sem anexo** Durante uma tramitação, caso ocorra um erro php, não é realizado um rollback da transação, de modo que parte dos componentes digitais cheguem no destinatário e parte não chega. [#956](https://github.com/pengovbr/mod-sei-pen/issues/956);
 
 Para obter informações detalhadas sobre cada um dos passos de atualização, vide arquivo **ATUALIZACAO.md**.
