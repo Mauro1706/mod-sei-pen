@@ -35,8 +35,10 @@ class ProcessoEletronicoRN extends InfraRN
   public static $TI_PROCESSO_ELETRONICO_AUTO_ENVIO_MULTIPLOS_ORGAOS = 'PEN_PROCESSO_AUTO_ENVIO_MULTIPLOS_ORGAOS';
 
   public static $TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS = 'PEN_ENVIO_MULTIPLOS_ORGAOS';
+  public static $TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS_REMETENTE = 'PEN_ENVIO_MULTIPLOS_ORGAOS_REMETENTE';
   public static $TI_PROCESSO_ELETRONICO_RECEBIMENTO_MULTIPLOS_ORGAOS = 'PEN_RECEBIMENTO_MULTIPLOS_ORGAOS';
   public static $TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS = 'PEN_PEDIDO_SINC_MULTIPLOS_ORGAOS';
+  public static $TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS_RECEBIDO = 'PEN_PEDIDO_SINC_MULTIPLOS_ORGAOS_RECEBIDO';
   public static $TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS = 'PEN_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS';
 
     /* TIPO DE PROTOCOLO RECEBIDO PELO BARRAMENTO - SE PROCESSO OU DOCUMENTO AVULSO */
@@ -1706,7 +1708,21 @@ class ProcessoEletronicoRN extends InfraRN
     }
   }
 
-  public function consultarTramites($parNumIdTramite = null, $parNumeroRegistro = null, $parNumeroUnidadeRemetente = null, $parNumeroUnidadeDestino = null, $parProtocolo = null, $parNumeroRepositorioEstruturas = null, $situacaoAtual = null)
+  /**
+   * Consulta trâmites de processo
+   *
+   * @param  null|integer $parNumIdTramite
+   * @param  null|string  $parNumeroRegistro
+   * @param  null|integer $parNumeroUnidadeRemetente
+   * @param  null|integer $parNumeroUnidadeDestino 
+   * @param  null|string  $parProtocolo
+   * @param  null|integer $parNumeroRepositorioEstruturas
+   * @param  null|string  $situacaoAtual
+   * @param  null|integer $limit
+   * @return null|array   Array de objetos TramiteDTO
+   * @throws InfraException
+   */
+  public function consultarTramites($parNumIdTramite = null, $parNumeroRegistro = null, $parNumeroUnidadeRemetente = null, $parNumeroUnidadeDestino = null, $parProtocolo = null, $parNumeroRepositorioEstruturas = null, $situacaoAtual = null, $limit = null)
     {
       $endpoint = 'tramites';
     try
@@ -1736,6 +1752,10 @@ class ProcessoEletronicoRN extends InfraRN
 
         if (!is_null($situacaoAtual)) {
             $parametros['situacaoAtual'] = $situacaoAtual;
+        }
+
+        if (!is_null($limit)) {
+            $parametros['quantidadeDeRegistros'] = $limit;
         }
 
         $arrResultado = $this->get($endpoint, $parametros);
@@ -3023,6 +3043,65 @@ class ProcessoEletronicoRN extends InfraRN
       $objAtributoAndamentoRN->cadastrarRN1363($objAtributoAndamentoDTO);
     }
       
+  }
+
+  public function cadastrarAtividadePedidoSincronizacao(ProcedimentoDTO $objProcedimentoDTO, string $tarefa)
+    {
+      try {
+          $idTarefa = ProcessoEletronicoRN::obterIdTarefaModulo($tarefa);
+
+          $objTarefaDTO = new TarefaDTO();
+          $objTarefaDTO->retNumIdTarefa();
+          $objTarefaDTO->retStrSinLancarAndamentoFechado();
+          $objTarefaDTO->setNumIdTarefa($idTarefa);
+
+          $objTarefaRN = new TarefaRN();
+          $objTarefaDTO = $objTarefaRN->consultar($objTarefaDTO);
+
+          if($objTarefaDTO === null) {
+            return false;
+          }
+
+          $idTarefa = $objTarefaDTO->getNumIdTarefa();
+          $strDataHoraAtual = InfraData::getStrDataHoraAtual();
+          $objAtividadeDTO = new AtividadeDTO();
+          $objAtividadeDTO->setDblIdProtocolo($objProcedimentoDTO->getDblIdProcedimento());
+          $objAtividadeDTO->setNumIdUnidade(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+          $objAtividadeDTO->setNumIdUsuario(SessaoSEI::getInstance()->getNumIdUsuario());
+          $objAtividadeDTO->setNumIdUnidadeOrigem(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+          $objAtividadeDTO->setNumIdUsuarioOrigem(SessaoSEI::getInstance()->getNumIdUsuario());
+          $objAtividadeDTO->setNumIdUsuarioAtribuicao(SessaoSEI::getInstance()->getNumIdUsuario());
+          $objAtividadeDTO->setNumIdTarefa($idTarefa);
+          $objAtividadeDTO->setStrSinInicial('N');
+          $objAtividadeDTO->setDtaPrazo(null);
+          $objAtividadeDTO->setNumIdUsuarioAtribuicao(null);
+          $objAtividadeDTO->setNumIdUsuarioVisualizacao(null);
+          $objAtividadeDTO->setDthAbertura($strDataHoraAtual);
+          $objAtividadeDTO->setNumTipoVisualizacao(AtividadeRN::$TV_VISUALIZADO);
+
+          if ($objTarefaDTO->getStrSinLancarAndamentoFechado() == 'S') {
+            //lança andamento fechado
+            $objAtividadeDTO->setNumIdUsuarioConclusao(SessaoSEI::getInstance()->getNumIdUsuario());
+            $objAtividadeDTO->setDthConclusao($strDataHoraAtual);
+          } else {
+            $objAtividadeDTO->setNumIdUsuarioConclusao(null);
+            $objAtividadeDTO->setDthConclusao(null);
+          }
+
+          $objAtividadeBD = new AtividadeBD($this->getObjInfraIBanco());
+          $objAtividadeDTO = $objAtividadeBD->cadastrar($objAtividadeDTO);
+
+          $objAtributoAndamentoDTO = new AtributoAndamentoDTO();
+          $objAtributoAndamentoDTO->setStrNome('PROTOCOLO_FORMATADO');
+          $objAtributoAndamentoDTO->setStrValor($objProcedimentoDTO->getStrProtocoloProcedimentoFormatado());
+          $objAtributoAndamentoDTO->setStrIdOrigem($objProcedimentoDTO->getDblIdProcedimento());
+          $objAtributoAndamentoDTO->setNumIdAtividade($objAtividadeDTO->getNumIdAtividade());
+          $objAtributoAndamentoDTO->setNumIdAtividade($objAtividadeDTO->getNumIdAtividade());
+          $objAtributoAndamentoRN = new AtributoAndamentoRN();
+          $objAtributoAndamentoRN->cadastrarRN1363($objAtributoAndamentoDTO);
+      } catch (\Exception $e) {
+          $this->gravarLogDebug("Erro ao gravar atividade múltiplos órgãos: $e", 0, true);
+      }
   }
   
   public function tratarCodigoErro($idRepositorioEstrutura, $stringJson, $mensagem)
