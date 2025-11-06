@@ -171,7 +171,7 @@ class TramiteRecebimentoDocumentoAvulsoTest extends FixtureCenarioBaseTestCase
      * @group envio
      * @large
      *
-     * @depends test_devolucao_processo_para_origem_documento_avulso
+     * @depends test_realizar_pedido_reproducao_ultimo_tramite
      *
      * @return void
      */
@@ -200,7 +200,7 @@ class TramiteRecebimentoDocumentoAvulsoTest extends FixtureCenarioBaseTestCase
      * @group envio
      * @large
      *
-     * @depends test_devolucao_processo_para_origem_documento_avulso
+     * @depends test_reproducao_ultimo_tramite
      *
      * @return void
      */
@@ -231,7 +231,7 @@ class TramiteRecebimentoDocumentoAvulsoTest extends FixtureCenarioBaseTestCase
      * @group verificacao_recebimento
      * @large
      *
-     * @depends test_devolucao_processo_para_origem_documento_avulso
+     * @depends test_reproducao_ultimo_tramite_remetente_finalizado
      *
      * @return void
      */

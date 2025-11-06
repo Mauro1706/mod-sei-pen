@@ -2896,7 +2896,7 @@ class ProcessoEletronicoRN extends InfraRN
       }
     } catch (Exception $e) {
         $mensagem = "Falha na reprodução do último trâmite do processo";
-        $arrayException = json_decode(mb_convert_encoding($e->getMessage(), 'UTF-8', 'ISO-8859-1'), true);
+        $arrayException = json_decode($e->getMessage(), true);
         $msg_esperada = "NRE, '$nre', já possui trâmite em andamento para este destinatário";
         // Expressão regular para buscar o texto com o número do processo como coringa
         $regex = '/Não é possível executar o serviço de reprodução de trâmite do processo \d{5}\.\d{6}\/\d{4}-\d{2}, pois não há componentes digitais válidos a serem reproduzidos/';

@@ -233,7 +233,7 @@ class TramiteEnvioParcialTest extends FixtureCenarioBaseTestCase
      * @group envio
      * @large
      *
-     * @depends test_verificar_processo_recebido_tramitar_remetente_envio_parcial
+     * @depends test_realizar_pedido_reproducao_ultimo_tramite
      *
      * @return void
      */
@@ -262,7 +262,7 @@ class TramiteEnvioParcialTest extends FixtureCenarioBaseTestCase
      * @group envio
      * @large
      *
-     * @depends test_verificar_processo_recebido_tramitar_remetente_envio_parcial
+     * @depends test_reproducao_ultimo_tramite
      *
      * @return void
      */
