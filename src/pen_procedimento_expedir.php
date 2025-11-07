@@ -42,6 +42,9 @@ try {
       $executarExpedicao = filter_var($_GET['executar'], FILTER_VALIDATE_BOOLEAN);
   }
 
+  
+    $arrIdsMultiplosOrgaos = [];
+
     $strLinkValidacao = $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=' . $_GET['acao'] . '&acao_origem=' . $_GET['acao'] . $strParametros));
     $strLinkProcedimento = $objSessaoSEI->assinarLink('controlador.php?acao=procedimento_trabalhar&acao_origem=procedimento_controlar&acao_retorno=procedimento_controlar&id_procedimento='.$idProcedimento);
 
@@ -235,21 +238,19 @@ try {
       }
 
       $bolProcessoFicaraAberto = false;
-      $objPenParametroRN = new PenParametroRN();
-      $numIdRepositorioOrigem = $objPenParametroRN->getParametro('PEN_ID_PROCESSO_FICARA_ABERTO');
-      if (!is_null($numIdRepositorioOrigem)) {
-        $objUnidadeDTO = new PenUnidadeDTO();
-        $objUnidadeDTO->retNumIdUnidadeRH();
-        $objUnidadeDTO->setNumIdUnidade($objSessaoSEI->getNumIdUnidadeAtual());
+      
+      $objPenEnvioParcialDTO = new PenRestricaoEnvioComponentesDigitaisDTO();
+      $objPenEnvioParcialDTO->retNumIdUnidadePen();
+      $objPenEnvioParcialDTO->setStrSinMultiplosOrgaos('S');
 
-        $objPenUnidadeRN = new PenUnidadeRN();
-        $objUnidadeDTO = $objPenUnidadeRN->consultar($objUnidadeDTO);
+      $objPenEnvioParcialRN = new PenRestricaoEnvioComponentesDigitaisRN();
+      $objPenEnvioParcialDTO = $objPenEnvioParcialRN->listar($objPenEnvioParcialDTO);
 
-        $numIdUnidadeRH = $objUnidadeDTO->getNumIdUnidadeRH();
-        if (!is_null($numIdUnidadeRH) && $numIdUnidadeRH == $numIdRepositorioOrigem) {
-            $bolProcessoFicaraAberto = true;
-        }
-      } 
+      if (count($objPenEnvioParcialDTO) > 0) {
+          foreach ($objPenEnvioParcialDTO as $dto) {
+              $arrIdsMultiplosOrgaos[] = $dto->getNumIdUnidadePen();
+          }
+      }
 
         break;
     default:
@@ -343,6 +344,13 @@ function inicializar() {
 
     objAutoCompletarEstrutura.processarResultado = function(id,descricao,complemento){
         window.infraAvisoCancelar();
+        $('#divSinMultiplosOrgaos').css('display', 'none');
+        if (id!=''){
+            $arrIdsMultiplosOrgaos = ('<?php echo implode(',', $arrIdsMultiplosOrgaos); ?>').split(',');
+            if ($arrIdsMultiplosOrgaos.indexOf(id) !== -1) {
+              $('#divSinMultiplosOrgaos').css('display', 'block');
+            }
+        }
     };
 
     $('#btnIdUnidade').click(function() {
@@ -378,7 +386,6 @@ function inicializar() {
     };
 
     objAutoCompletarApensados.processarResultado = function(id,descricao,complemento){
-
         if (id!=''){
             var options = document.getElementById('selProcedimentosApensados').options;
 
@@ -642,16 +649,14 @@ $objPaginaSEI->montarBarraComandosSuperior($arrComandos);
     <input type="hidden" id="hdnProcedimentosApensados" name="hdnProcedimentosApensados" value="<?php echo htmlspecialchars($_POST['hdnProcedimentosApensados'])?>" />
     <input type="hidden" id="hdnUnidadesAdministrativas" name="hdnUnidadesAdministrativas" value="" />
     
-    <?php if ($bolProcessoFicaraAberto) { ?>
-      <div id="divSinMultiplosOrgaos" class="infraDivCheckbox" style="padding-top: 10px;">
-        <input type="checkbox" id="multiplosOrgaos" name="multiplosOrgaos" class="infraCheckbox" tabindex="<?php echo PaginaSEI::getInstance()->getProxTabDados() ?>" />
-        <label id="lblSinMultiplosOrgaos" for="multiplosOrgaos" class="infraLabelCheckbox">
-          Manter o processo aberto na unidade atual?
-          <?php $mensagemAjuda = 'O processo permanecerá aberto para que possa ser enviada para múltiplos órgãos'; ?>
-          <a class='pen_ajuda' id='ajuda_processo_aberto' <?php echo PaginaSEI::montarTitleTooltip($mensagemAjuda); ?>><img src="<?php echo PaginaSEI::getInstance()->getDiretorioImagensGlobal() ?>/ajuda.gif" class='infraImg'/></a>
-        </label>
-      </div>
-    <?php } ?>
+    <div id="divSinMultiplosOrgaos" class="infraDivCheckbox" style="padding-top: 20px; display: none;">
+      <input type="checkbox" id="multiplosOrgaos" name="multiplosOrgaos" class="infraCheckbox" tabindex="<?php echo PaginaSEI::getInstance()->getProxTabDados() ?>" />
+      <label id="lblSinMultiplosOrgaos" for="multiplosOrgaos" class="infraLabelCheckbox">
+        Manter o processo aberto na unidade atual?
+        <?php $mensagemAjuda = 'O processo permanecerá aberto para que possa ser enviada para múltiplos órgãos'; ?>
+        <a class='pen_ajuda' id='ajuda_processo_aberto' <?php echo PaginaSEI::montarTitleTooltip($mensagemAjuda); ?>><img src="<?php echo PaginaSEI::getInstance()->getDiretorioImagensGlobal() ?>/ajuda.gif" class='infraImg'/></a>
+      </label>
+    </div>
 
 </form>
 <?php
