@@ -2644,20 +2644,12 @@ class PenAtualizarSeiRN extends PenAtualizadorRN
 
     protected function instalarV4100()
     {
-      // Criar parâmetro PEN_ID_PROCESSO_FICARA_ABERTO
-      $this->criarParametro('PEN_ID_PROCESSO_FICARA_ABERTO', NULL, 'Id da unidade AGU', '9');
-
-      /* ---------- antigo método (instalarV002R003S001US035) ---------- */
       $objMetaBanco = $this->inicializarObjMetaBanco();
 
-      if (!$objMetaBanco->isColunaExiste('md_pen_protocolo', 'sin_multiplos_orgaos')) {
-          $objMetaBanco->adicionarColuna('md_pen_protocolo', 'sin_multiplos_orgaos', 'CHAR(1)', PenMetaBD::NNULLO);
-          $objMetaBanco->adicionarValorPadraoParaColuna('md_pen_protocolo', 'sin_multiplos_orgaos', 'N');
-      }
-
-      if (!$objMetaBanco->isColunaExiste('md_pen_protocolo', 'sin_sincronizar_processo')) {
-          $objMetaBanco->adicionarColuna('md_pen_protocolo', 'sin_sincronizar_processo', 'CHAR(1)', PenMetaBD::NNULLO);
-          $objMetaBanco->adicionarValorPadraoParaColuna('md_pen_protocolo', 'sin_sincronizar_processo', 'N');
+      // Adicionar coluna para controle de múltiplos órgãos
+      if (!$objMetaBanco->isColunaExiste('md_pen_envio_comp_digitais', 'sin_multiplos_orgaos')) {
+          $objMetaBanco->adicionarColuna('md_pen_envio_comp_digitais', 'sin_multiplos_orgaos', 'CHAR(1)', PenMetaBD::NNULLO);
+          $objMetaBanco->adicionarValorPadraoParaColuna('md_pen_envio_comp_digitais', 'sin_multiplos_orgaos', 'N');
       }
 
       //----------------------------------------------------------------------

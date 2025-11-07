@@ -65,10 +65,7 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       SessaoSEI::getInstance()->validarAuditarPermissao('pen_procedimento_expedir', __METHOD__, $objExpedirProcedimentoDTO);
       $dblIdProcedimento = $objExpedirProcedimentoDTO->getDblIdProcedimento();
 
-      $objPenBlocoProcessoRN = new PenBlocoProcessoRN();
       $bolSinProcessamentoEmBloco = $objExpedirProcedimentoDTO->getBolSinProcessamentoEmBloco();
-      $numIdBloco = $objExpedirProcedimentoDTO->getNumIdBloco();
-      $numIdAtividade = $objExpedirProcedimentoDTO->getNumIdAtividade();
       $numIdUnidade = $objExpedirProcedimentoDTO->getNumIdUnidade();
 
       $objInfraException = new InfraException();
@@ -222,11 +219,8 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       SessaoSEI::getInstance()->validarAuditarPermissao('pen_procedimento_expedir', __METHOD__, $objExpedirProcedimentoDTO);
       $dblIdProcedimento = $objExpedirProcedimentoDTO->getDblIdProcedimento();
 
-      $objPenBlocoProcessoRN = new PenBlocoProcessoRN();
-      $numIdAtividade = $objExpedirProcedimentoDTO->getNumIdAtividade();
       $numIdUnidade = $objExpedirProcedimentoDTO->getNumIdUnidade();
 
-      $objInfraException = new InfraException();
       //Carregamento dos dados de processo e documento para validação e envio externo
       $objProcedimentoDTO = $this->consultarProcedimento($dblIdProcedimento);
       $objProcedimentoDTO->setArrObjDocumentoDTO($this->listarDocumentos($dblIdProcedimento));
@@ -250,13 +244,11 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
 
       $objCabecalho = $this->construirCabecalho($objExpedirProcedimentoDTO, $strNumeroRegistro, $dblIdProcedimento);
       //Construção do processo para envio
-      $arrProcesso = $this->construirProcessoREST($dblIdProcedimento, $objExpedirProcedimentoDTO->getArrIdProcessoApensado(), $objMetadadosProcessoTramiteAnterior);
+      $arrProcesso = $this->construirProcessoREST($dblIdProcedimento, $objExpedirProcedimentoDTO->getArrIdProcessoApensado(), $objMetadadosProcessoTramiteAnterior, true);
 
-      //Cancela trâmite anterior caso este esteja travado em status inconsistente 1 - STA_SITUACAO_TRAMITE_INICIADO
-      $objTramitesAnteriores = $this->consultarTramitesAnteriores($strNumeroRegistro);
-      if ($objTramiteInconsistente = $this->necessitaCancelamentoTramiteAnterior($objTramitesAnteriores)) {
-        $this->objProcessoEletronicoRN->cancelarTramite($objTramiteInconsistente->IDT);
-      }
+      //Cancela pedido de sincronização para validar envio de sem nenhum documento
+      $objMetadadosProcedimento = $objExpedirProcedimentoDTO->getObjMetadadosProcedimento();
+      $this->objProcessoEletronicoRN->cancelarTramite($objMetadadosProcedimento->IDT);
 
       $param = [
         'novoTramiteDeProcesso' => [
@@ -297,10 +289,9 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
             $numIdUnidade
           );
 
-
           $this->objProcessoEletronicoRN->cadastrarTramitePendente($objTramite->IDT, $idAtividadeExpedicao);
 
-          $this->enviarComponentesDigitais($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo'], false);
+          $this->enviarComponentesDigitaisSincronizar($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo']);
 
           $this->objProcedimentoAndamentoRN->cadastrar(ProcedimentoAndamentoDTO::criarAndamento('Concluído envio dos componentes do processo', 'S'));
 

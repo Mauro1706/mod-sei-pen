@@ -201,17 +201,7 @@ class ExpedirProcedimentoRN extends InfraRN
         //Obtém o tamanho total da barra de progreso
         $nrTamanhoTotalBarraProgresso = $this->obterTamanhoTotalDaBarraDeProgressoREST($arrProcesso);
 
-        if ($solicitarSincronizarTramite) {
-            // Solicitar sincronização do documentos pendentes
-            $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
-
-            $this->gravarLogDebug("Solicitação de sincronização de trâmite para o processo {$objMetadadosProcessoTramiteAnterior->IDT} foi realizada.", 0, true);
-            $this->barraProgresso->mover($this->barraProgresso->getNumMax());
-            $this->barraProgresso->setStrRotulo(ProcessoEletronicoINT::TEE_EXPEDICAO_ETAPA_CONCLUSAO);
-            return true;
-        }
-
-        if ($solicitarSincronizarTramite) {
+        if ($solicitarSincronizarTramite && $this->objProcessoEletronicoRN->validarProcessoMultiplosOrgaos($objProcedimentoDTO->getDblIdProcedimento())) {
             // Solicitar sincronização do documentos pendentes
             $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
 
@@ -712,7 +702,7 @@ class ExpedirProcedimentoRN extends InfraRN
       return false;
   }
 
-  public function construirProcessoREST($dblIdProcedimento, $arrIdProcessoApensado = null, $parObjMetadadosTramiteAnterior = null)
+  public function construirProcessoREST($dblIdProcedimento, $arrIdProcessoApensado = null, $parObjMetadadosTramiteAnterior = null, $removerDocumentosNaoAssinados = false)
     {
     if(!isset($dblIdProcedimento)) {
         throw new InfraException('Módulo do Tramita: Parâmetro $dblIdProcedimento não informado.');
@@ -742,9 +732,9 @@ class ExpedirProcedimentoRN extends InfraRN
       $objProcesso = $this->atribuirProdutorProcessoREST($objProcesso, $objProcedimentoDTO->getNumIdUsuarioGeradorProtocolo());
     
       $objProcesso = $this->atribuirDataHoraDeRegistroREST($objProcesso, $objProcedimentoDTO->getDblIdProcedimento());
-    
-      $objProcesso = $this->atribuirDocumentosREST($objProcesso, $dblIdProcedimento, $parObjMetadadosTramiteAnterior);
-    
+
+      $objProcesso = $this->atribuirDocumentosREST($objProcesso, $dblIdProcedimento, $parObjMetadadosTramiteAnterior, $removerDocumentosNaoAssinados);
+
       $objProcesso = $this->atribuirDadosInteressadosREST($objProcesso, $dblIdProcedimento);
     
       $objProcesso = $this->adicionarProcessosApensadosREST($objProcesso, $arrIdProcessoApensado);
@@ -1076,7 +1066,7 @@ class ExpedirProcedimentoRN extends InfraRN
       return $objProcesso;
   }
 
-  private function atribuirDocumentosREST($objProcesso, $dblIdProcedimento, $parObjMetadadosTramiteAnterior)
+  private function atribuirDocumentosREST($objProcesso, $dblIdProcedimento, $parObjMetadadosTramiteAnterior, $removerDocumentosNaoAssinados = false)
     {
 
        
@@ -1105,6 +1095,19 @@ class ExpedirProcedimentoRN extends InfraRN
     foreach ($arrDocumentosRelacionados as $ordem => $objDocumentosRelacionados) {
         $documentoDTO = $objDocumentosRelacionados["Documento"];
         $staAssociacao = $objDocumentosRelacionados["StaAssociacao"];
+
+        if ($removerDocumentosNaoAssinados && $documentoDTO->getStrStaDocumento() == DocumentoRN::$TD_EDITOR_INTERNO) {
+          $objAssinaturaDTO = new AssinaturaDTO();
+          $objAssinaturaDTO->retNumIdAssinatura();
+          $objAssinaturaDTO->setDblIdDocumento($documentoDTO->getDblIdDocumento());
+
+          $objAssinaturaRN = new AssinaturaRN();
+          if ($objAssinaturaRN->contarRN1324($objAssinaturaDTO) == 0) {
+            // Documento não assinado, então não será incluído no envio
+            $this->gravarLogDebug('Módulo do Tramita: Documento ' . $documentoDTO->getDblIdDocumento() . ' removido do envio por não ser assinado.');
+            continue;
+          }
+        }
 
         $objPenRelHipoteseLegalRN = new PenRelHipoteseLegalEnvioRN();
 
@@ -2467,6 +2470,9 @@ class ExpedirProcedimentoRN extends InfraRN
             }
           } catch (\Exception $e) {
               $strProtocoloDocumento = $objComponenteDigitalDTO->getStrProtocoloDocumentoFormatado();
+              if ($bolReproducaoUltimoTramite) {
+                $this->objProcedimentoAndamentoRN->setOpts($strNumeroRegistro, $numIdTramite, ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_EXPEDIDO), $objComponenteDigitalDTO->getDblIdProcedimento());
+              }
               $this->objProcedimentoAndamentoRN->cadastrar(ProcedimentoAndamentoDTO::criarAndamento(sprintf('Enviando %s %s', $strNomeDocumento, $strProtocoloDocumento), 'N'));
               throw new InfraException("Módulo do Tramita: Erro processando envio do componentes digitais do documento $strProtocoloDocumento", $e);
           }
@@ -2475,6 +2481,155 @@ class ExpedirProcedimentoRN extends InfraRN
     }
   }
 
+  public function enviarComponentesDigitaisSincronizar($strNumeroRegistro, $numIdTramite, $strProtocolo)
+  {
+    if (!isset($strNumeroRegistro)) {
+      throw new InfraException('Módulo do Tramita: Parâmetro $strNumeroRegistro não informado.');
+    }
+
+    if (!isset($numIdTramite)) {
+      throw new InfraException('Módulo do Tramita: Parâmetro $numIdTramite não informado.');
+    }
+
+    if (!isset($strProtocolo)) {
+      throw new InfraException('Módulo do Tramita: Parâmetro $strProtocolo não informado.');
+    }
+
+    //Obter dados dos componetes digitais
+    $objComponenteDigitalBD = new ComponenteDigitalBD($this->getObjInfraIBanco());
+    $objComponenteDigitalDTO = new ComponenteDigitalDTO();
+    $objComponenteDigitalDTO->setStrNumeroRegistro($strNumeroRegistro);
+    $objComponenteDigitalDTO->setNumIdTramite($numIdTramite);
+    $objComponenteDigitalDTO->setStrSinEnviar("S");
+    $objComponenteDigitalDTO->retDblIdDocumento();
+    $objComponenteDigitalDTO->retNumTicketEnvioComponentes();
+    $objComponenteDigitalDTO->retStrProtocoloDocumentoFormatado();
+    $objComponenteDigitalDTO->retStrHashConteudo();
+    $objComponenteDigitalDTO->retStrProtocolo();
+    $objComponenteDigitalDTO->retNumOrdem();
+    $objComponenteDigitalDTO->retStrNome();
+    $objComponenteDigitalDTO->retDblIdProcedimento();
+    $objComponenteDigitalDTO->setOrdNumOrdem(InfraDTO::$TIPO_ORDENACAO_ASC);
+    $objComponenteDigitalDTO->setOrdNumOrdemDocumento(InfraDTO::$TIPO_ORDENACAO_ASC);
+
+    $arrComponentesDigitaisDTOBanco = $objComponenteDigitalBD->listar($objComponenteDigitalDTO);
+    if (!empty($arrComponentesDigitaisDTOBanco)) {
+      $arrComponentesDigitaisIndexadosDTO = InfraArray::indexarArrInfraDTO($arrComponentesDigitaisDTOBanco, "IdDocumento", true);
+
+      //Construir objeto Componentes digitais
+      $arrHashComponentesEnviados = [];
+
+      foreach ($arrComponentesDigitaisIndexadosDTO as $arrComponentesDigitaisDTO) {
+        $bolMultiplosComponentes = count($arrComponentesDigitaisDTO) > 1;
+        $this->corrigirNumeroOrdemComponentes($arrComponentesDigitaisDTO, $arrComponentesDigitaisDTO[0]->getStrProtocoloDocumentoFormatado());
+        foreach ($arrComponentesDigitaisDTO as $objComponenteDigitalDTO) {
+          $dadosDoComponenteDigital = new stdClass();
+          $dadosDoComponenteDigital->ticketParaEnvioDeComponentesDigitais = $objComponenteDigitalDTO->getNumTicketEnvioComponentes();
+
+          //Processos apensados. Mesmo erro relatado com dois arquivos iguais em docs diferentes no mesmo processo
+          $dadosDoComponenteDigital->protocolo = $objComponenteDigitalDTO->getStrProtocolo();
+          $dadosDoComponenteDigital->hashDoComponenteDigital = $objComponenteDigitalDTO->getStrHashConteudo();
+
+          $arrObjDocumentoDTOAssociacao = $this->listarDocumentosRelacionados($objComponenteDigitalDTO->getDblIdProcedimento(), $objComponenteDigitalDTO->getDblIdDocumento());
+          $objDocumentoDTO = null;
+          $strStaAssociacao = null;
+          foreach ($arrObjDocumentoDTOAssociacao as $objDocumentoDTOAssociacao) {
+            $strStaAssociacao = $objDocumentoDTOAssociacao['StaAssociacao'];
+            if ($strStaAssociacao != RelProtocoloProtocoloRN::$TA_DOCUMENTO_MOVIDO) {
+              $objDocumentoDTO = $objDocumentoDTOAssociacao['Documento'];
+            }
+          }
+          $strNomeDocumento = $this->consultarNomeDocumentoPEN($objDocumentoDTO);
+
+          //Verifica se existe o objeto anexoDTO para recuperar informações do arquivo
+          $nrTamanhoArquivoMb = 0;
+          $nrTamanhoBytesArquivo = 0;
+          $nrTamanhoMegasMaximo = ProcessoEletronicoRN::obterTamanhoBlocoTransferencia();
+          $nrTamanhoBytesMaximo = ($nrTamanhoMegasMaximo * 1024 ** 2); //Qtd de MB definido como parametro
+
+          try {
+            //Verifica se o arquivo é maior que o tamanho máximo definido para envio, se for, realiza o particionamento do arquivo
+            if (!in_array($objComponenteDigitalDTO->getStrHashConteudo(), $arrHashComponentesEnviados)) {
+              if ($objDocumentoDTO->getStrStaProtocoloProtocolo() == ProtocoloRN::$TP_DOCUMENTO_RECEBIDO) {
+                $objAnexoDTO = $this->consultarAnexo($objDocumentoDTO->getDblIdDocumento());
+                if (!$objAnexoDTO) {
+                  $strProtocoloDocumento = $objDocumentoDTO->getStrProtocoloDocumentoFormatado();
+                  throw new InfraException("Módulo do Tramita: Anexo do documento $strProtocoloDocumento não pode ser localizado.");
+                }
+
+                $strCaminhoAnexoTemporario = null;
+                if ($bolMultiplosComponentes) {
+                  $numOrdemComponenteDigital = $objComponenteDigitalDTO->getNumOrdem();
+                  $strCaminhoAnexoCompactado = $this->objAnexoRN->obterLocalizacao($objAnexoDTO);
+                  [$strCaminhoAnexoTemporario,] = ProcessoEletronicoRN::descompactarComponenteDigital($strCaminhoAnexoCompactado, $numOrdemComponenteDigital);
+                  $strCaminhoAnexo = $strCaminhoAnexoTemporario;
+                } else {
+                  $strCaminhoAnexo = $this->objAnexoRN->obterLocalizacao($objAnexoDTO);
+                }
+
+                $nrTamanhoBytesArquivo = filesize($strCaminhoAnexo); //Tamanho total do arquivo
+                $nrTamanhoArquivoMb = ($nrTamanhoBytesArquivo / 1024 ** 2);
+
+                //Método que irá particionar o arquivo em partes para realizar o envio
+                $this->particionarComponenteDigitalParaEnvio(
+                  $strCaminhoAnexo,
+                  $dadosDoComponenteDigital,
+                  $nrTamanhoArquivoMb,
+                  $nrTamanhoMegasMaximo,
+                  $nrTamanhoBytesMaximo,
+                  false,
+                  false
+                );
+
+                //Finalizar o envio das partes do componente digital
+                $parametros = new stdClass();
+                $parametros->dadosDoTerminoDeEnvioDePartes = $dadosDoComponenteDigital;
+                $this->objProcessoEletronicoRN->sinalizarTerminoDeEnvioDasPartesDoComponente($parametros);
+
+                if (file_exists($strCaminhoAnexoTemporario)) {
+                  try {
+                    unlink(DIR_SEI_TEMP . "/" . basename((string) $strCaminhoAnexoTemporario));
+                  } catch (Exception $e) {
+                    LogSEI::getInstance()->gravar($e, InfraLog::$ERRO);
+                  }
+                }
+              } else {
+                $objDadosArquivo = $this->obterDadosArquivo($objDocumentoDTO, $strStaAssociacao);
+                $dados = [
+                  "objDocumentoDTO" => $objDocumentoDTO,
+                  "objDadosArquivo" => $objDadosArquivo,
+                  "dadosDoComponenteDigital" => $dadosDoComponenteDigital,
+                  "idProcedimentoPrincipal" => $objComponenteDigitalDTO->getDblIdProcedimento()
+                ];
+
+                $this->salvarAnexoImutavel($dados);
+                $dadosDoComponenteDigital->conteudoDoComponenteDigital = $objDadosArquivo['CONTEUDO'];
+
+                $parametros = new stdClass();
+                $parametros->dadosDoComponenteDigital = $dadosDoComponenteDigital;
+                $this->objProcessoEletronicoRN->enviarComponenteDigital($parametros);
+              }
+
+              $arrHashComponentesEnviados[] = $objComponenteDigitalDTO->getStrHashConteudo();
+              //Bloquear documento para atualização, já que ele foi visualizado
+              $this->objDocumentoRN->bloquearConteudo($objDocumentoDTO);
+              $this->objProcedimentoAndamentoRN->cadastrar(
+                ProcedimentoAndamentoDTO::criarAndamento(sprintf(
+                  'Enviando %s %s',
+                  $strNomeDocumento,
+                  $objComponenteDigitalDTO->getStrProtocoloDocumentoFormatado()
+                ), 'S')
+              );
+            }
+          } catch (\Exception $e) {
+            $strProtocoloDocumento = $objComponenteDigitalDTO->getStrProtocoloDocumentoFormatado();
+            $this->objProcedimentoAndamentoRN->cadastrar(ProcedimentoAndamentoDTO::criarAndamento(sprintf('Enviando %s %s', $strNomeDocumento, $strProtocoloDocumento), 'N'));
+            throw new InfraException("Módulo do Tramita: Erro processando envio do componentes digitais do documento $strProtocoloDocumento", $e);
+          }
+        }
+      }
+    }
+  }
 
   protected function retornaComponentesImutaveisControlado($objDocumentoDTO)
     {
