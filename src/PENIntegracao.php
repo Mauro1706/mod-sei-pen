@@ -237,7 +237,8 @@ class PENIntegracao extends SeiIntegracao
 
     $objTramiteDTO = $objTramiteBD->consultarUltimoTramite($objProcessoEletronicoDTO, ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO);
 
-    if ($bolFlagAberto && !is_null($objTramiteDTO)){
+    $podeSolicitarReproducaoUltimoTramite = ProcessoEletronicoRN::podeSolicitarReproducaoUltimoTramite($dblIdProcedimento);
+    if ($bolFlagAberto && !is_null($objTramiteDTO) && $podeSolicitarReproducaoUltimoTramite) {
       $strAcoesProcedimento .= '<a onclick="return confirm(\\\'Confirma reproduzir último trâmite deste processo?\\\');" href="' . $objSessaoSEI->assinarLink('controlador.php?acao=pen_reproduzir_ultimo_tramite&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_repositorio=' . $objTramiteDTO->getNumIdRepositorioDestino() . '&id_estrutura=' . $objTramiteDTO->getNumIdEstruturaDestino() . '&nre=' . $objTramiteDTO->getStrNumeroRegistro() . '&id_ultimo_tramite=' . $objTramiteDTO->getNumIdTramite() . '&id_procedimento=' . $dblIdProcedimento . '&arvore=1') . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
       $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/pen_reproduzir_ultimo_tramite.svg", $this->getDiretorioImagens()) . ' alt="Reproduzir Último Trâmite" title="Reproduzir Último Trâmite"/>';
       $strAcoesProcedimento .= '</a>';
@@ -566,6 +567,7 @@ class PENIntegracao extends SeiIntegracao
       $objAtividadeDTO->retNumIdAtividade();
       $objAtividadeDTO->retNumIdTarefa();
       $objAtividadeDTO->retDblIdProcedimentoProtocolo();
+      $objAtividadeDTO->retDthAbertura();
     
       $objAtividadeRN = new AtividadeRN();
       $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
@@ -578,7 +580,7 @@ class PENIntegracao extends SeiIntegracao
                 break;
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
-              $arrObjArvoreAcaoItemAPI[] = $this->getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento);
+              $arrObjArvoreAcaoItemAPI[] = $this->getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento, $objAtividadeDTO->getDthAbertura());
                 break;
             default:
                 break;
@@ -639,13 +641,13 @@ class PENIntegracao extends SeiIntegracao
       return $objArvoreAcaoItemAPI;
   }
 
-  private function getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento)
+  private function getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento, $dthSincronizacao)
     {
       $objArvoreAcaoItemAPI = new ArvoreAcaoItemAPI();
       $objArvoreAcaoItemAPI->setTipo('MD_SINC_PROCESSO_FINALIZADO');
       $objArvoreAcaoItemAPI->setId('MD_SINC_PROCESSO_' . $dblIdProcedimento);
       $objArvoreAcaoItemAPI->setIdPai($dblIdProcedimento);
-      $objArvoreAcaoItemAPI->setTitle('Processo sincronizado');
+      $objArvoreAcaoItemAPI->setTitle('Sincronização realizada em ' . $dthSincronizacao);
       $objArvoreAcaoItemAPI->setIcone($this->getDiretorioImagens() . '/refresh_icon_no_background_green.png');
 
       $objArvoreAcaoItemAPI->setTarget(null);
