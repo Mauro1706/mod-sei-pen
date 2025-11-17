@@ -120,7 +120,11 @@ class PaginaTramiteEmBloco extends PaginaTeste
    */
   public function verificarTituloDaPagina($titulo)
   {
-    $tituloDaPagina = $this->test->byXPath('//h1[text()="' . $titulo . '"]');
+    // Busca pelo título apenas em elementos com classe específica para título
+    $tituloDaPagina = $this->test->byXPath(
+        "//div[contains(@class, 'infraTitulo') or contains(@class, 'infraBarraLocalizacao')]" .
+        "[normalize-space(.)='" . $titulo . "']"
+    );
     return $tituloDaPagina->text();
   }
 

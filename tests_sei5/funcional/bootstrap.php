@@ -19,6 +19,7 @@ restore_error_handler();
 //Classes utilitárias para manipulação dos dados do SEI
 require_once __DIR__ . '/src/utils/DatabaseUtils.php';
 require_once __DIR__ . '/src/utils/ParameterUtils.php';
+require_once __DIR__ . '/src/utils/RandomUtils.php';
 
 //Representação das páginas sob teste
 require_once __DIR__ . '/src/paginas/PaginaTeste.php';
@@ -36,6 +37,7 @@ require_once __DIR__ . '/src/paginas/PaginaProcessosTramitadosExternamente.php';
 require_once __DIR__ . '/src/paginas/PaginaReciboTramite.php';
 require_once __DIR__ . '/src/paginas/PaginaEditarProcesso.php';
 require_once __DIR__ . '/src/paginas/PaginaAnexarProcesso.php';
+require_once __DIR__ . '/src/paginas/PaginaAgendamentos.php';
 require_once __DIR__ . '/src/paginas/PaginaCancelarDocumento.php';
 require_once __DIR__ . '/src/paginas/PaginaMoverDocumento.php';
 require_once __DIR__ . '/src/paginas/PaginaTramitarProcessoEmLote.php';
