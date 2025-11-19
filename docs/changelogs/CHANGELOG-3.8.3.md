@@ -32,6 +32,8 @@ Todas as atualizações podem incluir itens referentes à segurança, requisito 
 
 * **Erro que permite que o destinarário receba documentos sem anexo** Durante uma tramitação, caso ocorra um erro php, não é realizado um rollback da transação, de modo que parte dos componentes digitais cheguem no destinatário e parte não chega. [#956](https://github.com/pengovbr/mod-sei-pen/issues/956);
 
+* **Erro: Mensagem de inclusão ou remoção continua sendo exibida mesmo após conclusão da box** Correção de erro ao adicionar ou remover um processo de um bloco, a mensagem de adição ou remoção do processo no bloco é exibida, mas não para de ser exibida, mesmo após clicar no botão "ok". Fica em loop infinito. [#991](https://github.com/pengovbr/mod-sei-pen/issues/991);
+
 Para obter informações detalhadas sobre cada um dos passos de atualização, vide arquivo **ATUALIZACAO.md**.
 
 #### Instruções
