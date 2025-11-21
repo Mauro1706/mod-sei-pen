@@ -135,8 +135,6 @@ services:
   org1-http:
     image: ${HTTPD_IMAGE}:${ENVIRONMENT_VERSION}
     restart: always
-    env_file:
-      - .modulo.env
     depends_on:
       - org1-database
     volumes:
@@ -203,8 +201,6 @@ services:
   org2-http:
     image: ${HTTPD_IMAGE}:${ENVIRONMENT_VERSION}
     restart: always
-    env_file:
-      - .modulo.env
     depends_on:
       - org2-database
     volumes:

@@ -1,4 +1,4 @@
-.PHONY: .env .modulo.env help clean dist all install destroy up update down test test-functional test-functional-parallel test-unit bash_org1 bash_org2 verify-config
+.PHONY: .env help clean dist all install destroy up update down test test-functional test-functional-parallel test-unit bash_org1 bash_org2 verify-config
 
 # Parâmetros de execução do comando MAKE
 # Opções possíveis para spe (sistema de proc eletronico): sei3, sei4, sei41, super
@@ -42,7 +42,7 @@ PEN_TST_FNC_EVD_TFP= $(PEN_TST_FNC_EVD)/teste_funcional_falsos_positivos
 NOME_ARQ_EVDNC_TFP = evidencia-teste_funcional_falsos_positivos
 
 -include $(PEN_TEST_FUNC)/.env
--include $(PEN_TEST_FUNC)/.modulo.env
+
 
 CMD_INSTALACAO_SEI = echo -ne '$(SEI_DATABASE_USER)\n$(SEI_DATABASE_PASSWORD)\n' | php atualizar_versao_sei.php
 CMD_INSTALACAO_SIP = echo -ne '$(SIP_DATABASE_USER)\n$(SIP_DATABASE_PASSWORD)\n' | php atualizar_versao_sip.php
@@ -169,8 +169,6 @@ install: check-isalive
 .env:
 	@if [ ! -f "$(PEN_TEST_FUNC)/.env" ]; then cp $(PEN_TEST_FUNC)/env_$(base) $(PEN_TEST_FUNC)/.env; fi
 
-.modulo.env:
-	@if [ ! -f "$(PEN_TEST_FUNC)/.modulo.env" ]; then cp $(PEN_TEST_FUNC)/env_modulo $(PEN_TEST_FUNC)/.modulo.env; fi
 
 up: .env prepare-upload-tmp 
 # Em alguns BDs os containers demoram alguns segundos para ficarem estáveis.
