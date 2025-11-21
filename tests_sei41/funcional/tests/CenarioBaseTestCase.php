@@ -1,6 +1,5 @@
 <?php
 
-use \utilphp\util;
 use PHPUnit\Extensions\Selenium2TestCase;
 
 use function PHPSTORM_META\map;
@@ -48,6 +47,7 @@ class CenarioBaseTestCase extends Selenium2TestCase
     protected $paginaEnvioParcialListar = null;
     protected $paginaPenHipoteseLegalListar = null;
     protected $paginaMapUnidades = null;
+    protected $paginaAgendamentos = null;
 
     public function setUpPage(): void
     {
@@ -77,6 +77,7 @@ class CenarioBaseTestCase extends Selenium2TestCase
         $this->paginaEnvioParcialListar = new PaginaEnvioParcialListar($this);
         $this->paginaPenHipoteseLegalListar = new PaginaPenHipoteseLegalListar($this);
         $this->paginaMapUnidades = new PaginaMapUnidades($this);
+        $this->paginaAgendamentos = new PaginaAgendamentos($this);
         $this->currentWindow()->maximize();
     }
 
@@ -278,11 +279,23 @@ class CenarioBaseTestCase extends Selenium2TestCase
         $this->paginaBase->sairSistema();
     }
 
-    protected function abrirProcesso($protocolo)
+  protected function abrirProcesso($protocolo)
     {
-        $this->paginaBase->navegarParaControleProcesso();
+      $this->paginaBase->navegarParaControleProcesso();
+    try {
         $this->paginaControleProcesso->abrirProcesso($protocolo);
+    } catch (\Exception $e) {
+        $this->paginaBase->pesquisar($protocolo);
+        sleep(2);
+        $this->byXPath('(//a[@id="lnkInfraMenuSistema"])[2]')->click();
     }
+  }
+
+  protected function abrirProcessoControleProcesso($protocolo)
+    {
+      $this->paginaBase->navegarParaControleProcesso();
+      $this->paginaControleProcesso->abrirProcesso($protocolo);
+  }
 
     protected function abrirProcessoPelaDescricao($descricao)
     {
@@ -395,13 +408,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
                 $testCase->frame('ifrConteudoVisualizacao');
                 $testCase->frame('ifrVisualizacao');
                 $testCase->frame('ifrEnvioProcesso');
-                $mensagemValidacao = mb_convert_encoding('Falha no envio externo do processo. Verifique log de erros do sistema para maiores informações.', 'UTF-8', 'ISO-8859-1');
-                $t = $testCase->byCssSelector('body')->text(); 
+                $t = $testCase->byCssSelector('body')->text();                 
+                $mensagemValidacao = mb_convert_encoding('A unidade ' . $dados['nomeUnidadeMalMapeada'] . ' (' . $dados['idUnidadeMalMapeada'] . ') foi mapeada de forma errada. Desse modo, entre em contato com os Gestores do seu órgão e informe que o mapeamento não está correto.', 'UTF-8', 'ISO-8859-1');             
                 $testCase->assertStringContainsString($mensagemValidacao, $t);
-                $testCase->byXPath("//input[@id='btnInfraDetalhesExcecao']")->click();
-                $mensagemValidacao2 = mb_convert_encoding('A unidade ' . $dados['nomeUnidadeMalMapeada'] . ' (' . $dados['idUnidadeMalMapeada'] . ') foi mapeada de forma errada. Desse modo, entre em contato com os Gestores do seu órgão e informe que o mapeamento não está correto.', 'UTF-8', 'ISO-8859-1');             
-                $testCase->assertStringContainsString($mensagemValidacao2, $testCase->byCssSelector('body')->text());
-
                 $btnFechar = $testCase->byXPath("//input[@id='btnFechar']");
                 $btnFechar->click();
             } finally {
@@ -587,7 +596,12 @@ class CenarioBaseTestCase extends Selenium2TestCase
     {
         $this->frame(null);
         $this->paginaBase->navegarParaControleProcesso();
-        $this->byId("txtInfraPesquisarMenu")->value(mb_convert_encoding('Processos em Tramitação Externa', 'UTF-8', 'ISO-8859-1'));
+        $txtPesquisaMenu = $this->byId("txtInfraPesquisarMenu");
+        if (!$txtPesquisaMenu->displayed()) {
+            $this->byXPath('(//a[@id="lnkInfraMenuSistema"])[2]')->click();
+        }
+        $txtPesquisaMenu->value(mb_convert_encoding('Processos em Tramitação Externa', 'UTF-8', 'ISO-8859-1'));
+        
         $this->byLinkText(mb_convert_encoding("Processos em Tramitação Externa", 'UTF-8', 'ISO-8859-1'))->click();
         $this->assertEquals($deveExistir, $this->paginaProcessosTramitadosExternamente->contemProcesso($protocolo));
     }
@@ -603,9 +617,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
     {
         return array(
             "TIPO_PROCESSO" => $contextoProducao['TIPO_PROCESSO'],
-            "DESCRICAO" => util::random_string(100),
+            "DESCRICAO" => randomString(100),
             "OBSERVACOES" => null,
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ORIGEM" => $contextoProducao['URL'],
         );
@@ -617,9 +631,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             'TIPO' => 'G', // Documento do tipo Gerado pelo sistema
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
-            "DESCRICAO" => trim(str_repeat(util::random_string(9) . ' ', 10)),
+            "DESCRICAO" => trim(str_repeat(randomString(9) . ' ', 10)),
             "OBSERVACOES" => null,
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ORDEM_DOCUMENTO_REFERENCIADO" => null,
             "ARQUIVO" => ".html",
@@ -640,9 +654,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
             "DATA_ELABORACAO" => '01/01/2017',
-            "DESCRICAO" => str_repeat(util::random_string(9) . ' ', 10),
-            "OBSERVACOES" => util::random_string(500),
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "DESCRICAO" => str_repeat(randomString(9) . ' ', 10),
+            "OBSERVACOES" => randomString(500),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "ORDEM_DOCUMENTO_REFERENCIADO" => $ordemDocumentoReferenciado,
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ARQUIVO" => $arquivos,
@@ -662,9 +676,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
             "DATA_ELABORACAO" => '01/01/2017',
-            "DESCRICAO" => str_repeat(util::random_string(9) . ' ', 10),
-            "OBSERVACOES" => util::random_string(500),
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "DESCRICAO" => str_repeat(randomString(9) . ' ', 10),
+            "OBSERVACOES" => randomString(500),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "ORDEM_DOCUMENTO_REFERENCIADO" => $ordemDocumentoReferenciado,
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ARQUIVO" => $arquivos,
@@ -682,7 +696,7 @@ class CenarioBaseTestCase extends Selenium2TestCase
         // 11 - Abrir protocolo na tela de controle de processos
         $this->waitUntil(function ($testCase) use ($strProtocoloTeste) {
             sleep(5);
-            $this->abrirProcesso($strProtocoloTeste);
+            $this->abrirProcessoControleProcesso($strProtocoloTeste);
             return true;
         }, PEN_WAIT_TIMEOUT);
 

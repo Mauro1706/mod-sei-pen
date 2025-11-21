@@ -1,7 +1,7 @@
 <?php
 
 // Identificação da versão do módulo. Este deverá ser atualizado e sincronizado com constante VERSAO_MODULO
-define("VERSAO_MODULO_PEN", "3.8.2");
+define("VERSAO_MODULO_PEN", "3.8.3");
 
 class PENIntegracao extends SeiIntegracao
 {
@@ -222,6 +222,18 @@ class PENIntegracao extends SeiIntegracao
         $strAcoesProcedimento .= '</a>';
       }
     }
+
+    // $objProcessoEletronicoDTO = new ProcessoEletronicoDTO();
+    // $objProcessoEletronicoDTO->setDblIdProcedimento($dblIdProcedimento);
+    // $objTramiteBD = new TramiteBD(BancoSEI::getInstance());
+
+    // $objTramiteDTO = $objTramiteBD->consultarUltimoTramite($objProcessoEletronicoDTO, ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO);
+    // $podeSolicitarReproducaoUltimoTramite = ProcessoEletronicoRN::podeSolicitarReproducaoUltimoTramite($dblIdProcedimento);
+    // if ($bolFlagAberto && !is_null($objTramiteDTO) && $podeSolicitarReproducaoUltimoTramite){
+    //   $strAcoesProcedimento .= '<a onclick="return confirm(\\\'Confirma reproduzir último trâmite deste processo?\\\');" href="' . $objSessaoSEI->assinarLink('controlador.php?acao=pen_reproduzir_ultimo_tramite&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_repositorio=' . $objTramiteDTO->getNumIdRepositorioDestino() . '&id_estrutura=' . $objTramiteDTO->getNumIdEstruturaDestino() . '&nre=' . $objTramiteDTO->getStrNumeroRegistro() . '&id_ultimo_tramite=' . $objTramiteDTO->getNumIdTramite() . '&id_procedimento=' . $dblIdProcedimento . '&arvore=1') . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
+    //   $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/pen_reproduzir_ultimo_tramite.svg", $this->getDiretorioImagens()) . ' alt="Reproduzir Último Trâmite" title="Reproduzir Último Trâmite"/>';
+    //   $strAcoesProcedimento .= '</a>';
+    // }
 
     return array($strAcoesProcedimento);
   }
@@ -538,7 +550,6 @@ class PENIntegracao extends SeiIntegracao
     return static::getDiretorio() . '/imagens';
   }
 
-
   public function montarMensagemProcesso(ProcedimentoAPI $objProcedimentoAPI)
   {
     if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()){
@@ -631,51 +642,82 @@ class PENIntegracao extends SeiIntegracao
     return $arrIcones;
   }
 
-  /**
-   * @param array $arrObjTipoProcedimentoDTO
-   * @return void
-   */
-  public function desativarTipoProcesso($arrObjTipoProcedimentoDTO)
-  {
-    if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()){
-      return false;
-    }
-
-    $mensagem = "Prezado(a) usuário(a), você está tentando desativar um Tipo de Processo que se encontra mapeado para o(s) relacionamento(s) "
-          ."\"%s\". Para continuar com essa ação é necessário remover do(s) mapeamentos "
-          ."mencionados o Tipo de Processo: \"%s\".";
-
-    $objMapeamentoTipoProcedimentoRN = new PenMapTipoProcedimentoRN();
-    $objMapeamentoTipoProcedimentoRN->validarAcaoTipoProcesso($arrObjTipoProcedimentoDTO, $mensagem);
-
-    $mensagem = 'Prezado(a) usuário(a), você está tentando desativar o Tipo de Processo "%s" '
-      . 'que se encontra mapeado para o Tipo de Processo Padrão. '
-      . 'Para continuar com essa ação é necessário alterar o Tipo de Processo Padrão. '
-      . 'O Tipo de Processo padrão se encontra disponível em: '
-      . 'Administração -> Tramita GOV.BR -> Mapeamento de Tipos de Processo -> Relacionamento entre Unidades';
-
-    $objPenParametroRN = new PenParametroRN();
-    $objPenParametroRN->validarAcaoTipoProcessoPadrao($arrObjTipoProcedimentoDTO, $mensagem);
+  public function desativarTipoDocumento($arrObjSerieAPI) {
+    $this->validarExcluirDesativarTipoDocumento($arrObjSerieAPI, 'desativar');
   }
 
-  /**
-   * @param array $arrObjTipoProcedimentoDTO
-   * @return void
-   */
-  public function excluirTipoProcesso($arrObjTipoProcedimentoDTO)
+  public function excluirTipoDocumento($arrObjSerieAPI) {
+    $this->validarExcluirDesativarTipoDocumento($arrObjSerieAPI, 'excluir');
+  }
+
+  protected function validarExcluirDesativarTipoDocumento($arrObjSerieAPI,  $strDesativarExcluir)
   {
-    if(!PENIntegracao::verificarCompatibilidadeConfiguracoes()){
-      return false;
+    $excecao = new InfraException();
+    foreach ($arrObjSerieAPI as $objSerieAPI) {
+      $objPenRelTipoDocMapEnviadoDTO = new PenRelTipoDocMapEnviadoDTO();
+      $objPenRelTipoDocMapEnviadoDTO->setNumIdSerie($objSerieAPI->getIdSerie());
+      $objPenRelTipoDocMapEnviadoDTO->retNumIdSerie();
+
+      $objPenRelTipoDocMapEnviadoRN = new PenRelTipoDocMapEnviadoRN();
+      $objPenRelTipoDocMapEnviadoDTO = $objPenRelTipoDocMapEnviadoRN->contar($objPenRelTipoDocMapEnviadoDTO);
+
+      $objPenRelTipoDocMapRecebidoDTO = new PenRelTipoDocMapRecebidoDTO();
+      $objPenRelTipoDocMapRecebidoDTO->setNumIdSerie($objSerieAPI->getIdSerie());
+      $objPenRelTipoDocMapRecebidoDTO->retNumIdSerie();
+
+      $objPenRelTipoDocMapRecebidoRN = new PenRelTipoDocMapRecebidoRN();
+      $objPenRelTipoDocMapRecebidoDTO = $objPenRelTipoDocMapRecebidoRN->contar($objPenRelTipoDocMapRecebidoDTO);
+      
+      if ($objPenRelTipoDocMapRecebidoDTO > 0 || $objPenRelTipoDocMapEnviadoDTO > 0) {
+          $excecao->lancarValidacao('Prezado(a) usuário(a), você está tentando '.$strDesativarExcluir.' o tipo de documento "'. $objSerieAPI->getNome()
+          . '". Esse tipo de documento está mapeado em Administração -> Tramita GOV.BR -> Mapeamento de Tipos de Documentos -> Envio/Recebimento');
+      }
     }
+  }
+
+  public function desativarUnidade($arrObjUnidadeAPI) {
+    $this->validarExcluirDesativarUnidade($arrObjUnidadeAPI, 'desativar');
+  }
+
+  public function excluirUnidade($arrObjUnidadeAPI) {
+    $this->validarExcluirDesativarUnidade($arrObjUnidadeAPI, 'excluir');
+  }
+
+  protected function validarExcluirDesativarUnidade($arrObjUnidadeAPI, $strDesativarExcluir)
+  {
+    $excecao = new InfraException();
+    foreach ($arrObjUnidadeAPI as $objUnidadeAPI) {
+      $objPenUnidadeDTO = new PenUnidadeDTO();
+      $objPenUnidadeDTO->setNumIdUnidade($objUnidadeAPI->getIdUnidade());
+      $objPenUnidadeDTO->retNumIdUnidade();
+
+      $objPenUnidadeRN = new PenUnidadeRN();
+      $objPenUnidadeDTO = $objPenUnidadeRN->contar($objPenUnidadeDTO);
+      if ($objPenUnidadeDTO > 0) {
+        $excecao->lancarValidacao('Prezado(a) usuário(a), você está tentando '.$strDesativarExcluir.' a unidade "'. $objUnidadeAPI->getSigla()
+        . '". Essa unidade está mapeada em Administração -> Tramita GOV.BR -> Mapeamento de Unidades -> Listar' );
+      }
+    }
+  }
+
+  public function excluirTipoProcesso($arrObjTipoProcedimentoDTO) {
+    $this->validarDesativarExcluirTipoProcesso($arrObjTipoProcedimentoDTO, 'excluir');
+  }
+
+  public function desativarTipoProcesso($arrObjTipoProcedimentoDTO) {
+    $this->validarDesativarExcluirTipoProcesso($arrObjTipoProcedimentoDTO, 'desativar');
+  }
+
+  protected function validarDesativarExcluirTipoProcesso($arrObjTipoProcedimentoDTO, $strDesativarExcluir) {
     
-    $mensagem = "Prezado(a) usuário(a), você está tentando excluir um Tipo de Processo que se encontra mapeado para o(s) relacionamento(s) "
-      ."\"%s\". Para continuar com essa ação é necessário remover do(s) mapeamentos "
-      ."mencionados o Tipo de Processo: \"%s\".";
+    $mensagem = "Prezado(a) usuário(a), você está tentando ".$strDesativarExcluir." um Tipo de Processo que se encontra mapeado para o(s) relacionamento(s) "
+    ."\"%s\". Para continuar com essa ação é necessário remover do(s) mapeamentos "
+    ."mencionados o Tipo de Processo: \"%s\".";
 
     $objMapeamentoTipoProcedimentoRN = new PenMapTipoProcedimentoRN();
     $objMapeamentoTipoProcedimentoRN->validarAcaoTipoProcesso($arrObjTipoProcedimentoDTO, $mensagem);
 
-    $mensagem = 'Prezado(a) usuário(a), você está tentando excluir o Tipo de Processo "%s" '
+    $mensagem = 'Prezado(a) usuário(a), você está tentando '.$strDesativarExcluir.' o Tipo de Processo "%s" '
       . 'que se encontra mapeado para o Tipo de Processo Padrão. '
       . 'Para continuar com essa ação é necessário alterar o Tipo de Processo Padrão. '
       . 'O Tipo de Processo padrão se encontra disponível em: '
@@ -683,6 +725,24 @@ class PENIntegracao extends SeiIntegracao
 
     $objPenParametroRN = new PenParametroRN();
     $objPenParametroRN->validarAcaoTipoProcessoPadrao($arrObjTipoProcedimentoDTO, $mensagem);
+
+    $exception = new InfraException();
+    foreach ($arrObjTipoProcedimentoDTO as $objProcedimento) {
+        $objPenParametroDTO = new PenParametroDTO();
+        $objPenParametroDTO->setStrNome('PEN_TIPO_PROCESSO_EXTERNO');
+        $objPenParametroDTO->setStrValor($objProcedimento->getIdTipoProcedimento());
+        $objPenParametroRN = new PenParametroRN();
+        $objPenParametroDTO = $objPenParametroRN->contar($objPenParametroDTO);
+
+        $objProcedimentoDTO = new ProcedimentoDTO();
+        $objProcedimentoDTO->setNumIdTipoProcedimento($objProcedimento->getIdTipoProcedimento());
+        $objProcedimentoRN = new ProcedimentoRN();
+        $objProcedimentoDTO = $objProcedimentoRN->contarRN0279($objProcedimentoDTO);
+
+      if ($objPenParametroDTO > 0 || $objProcedimentoDTO > 0) {
+          $exception->lancarValidacao('Existem processos utilizando o tipo de processo "'. $objProcedimento->getNome().'".');
+      }
+    }
   }
 
   /**
@@ -724,7 +784,7 @@ class PENIntegracao extends SeiIntegracao
   }
 
   /**
-   * MÃ©todo de formataÃ§Ã£o para caracteres especiais XML
+   * Método de formatação para caracteres especiais XML
    */
   private static function formatarXMLAjax($str)
   {
@@ -941,6 +1001,10 @@ class PENIntegracao extends SeiIntegracao
       case 'pen_map_envio_parcial_visualizar':
           require_once dirname(__FILE__) . '/pen_map_envio_parcial_cadastrar.php';
           break;
+      case 'pen_reproduzir_ultimo_tramite':
+          require_once dirname(__FILE__) . '/pen_reproduzir_ultimo_tramite.php';
+          break;
+      
 
       default:
           return false;

@@ -1,6 +1,5 @@
 <?php
 
-use \utilphp\util;
 
 /**
  * Execution Groups
@@ -24,6 +23,7 @@ class TramiteRecebimentoDocumentoAnexadoTest extends FixtureCenarioBaseTestCase
     public static $documentoTeste3;
     public static $documentoTeste4;
     public static $documentoTeste5;
+    public static $protocoloTeste;
 
     public static $conteudoCompoonenteDigital;
 
@@ -93,6 +93,100 @@ class TramiteRecebimentoDocumentoAnexadoTest extends FixtureCenarioBaseTestCase
         $arrDocumentosSegundoEnvio = array(self::$documentoTeste4, self::$documentoTeste5);
         $this->realizarTramiteExternoComValidacaoNoRemetenteFixture(self::$processoTeste, $arrDocumentosSegundoEnvio, self::$remetente, self::$destinatario);
     }
+
+
+    /**
+     * Teste de realizar reprodução de último tramite
+     *
+     * @group envio
+     * @large
+     *
+     * @depends test_devolucao_processo_com_documento_anexado_para_origem
+     *
+     * @return void
+     */
+    // public function test_realizar_pedido_reproducao_ultimo_tramite()
+    // {
+    //     self::$protocoloTeste = self::$processoTeste["PROTOCOLO"];
+    //     $strProtocoloTeste = self::$protocoloTeste;
+    //     self::$destinatario = $this->definirContextoTeste(CONTEXTO_ORGAO_B);
+    //     $this->acessarSistema(self::$destinatario['URL'], self::$destinatario['SIGLA_UNIDADE'], self::$destinatario['LOGIN'], self::$destinatario['SENHA']);
+        
+    //     // 11 - Reproduzir último trâmite
+    //     $this->abrirProcesso($strProtocoloTeste);
+    //     $resultadoReproducao = $this->paginaProcesso->reproduzirUltimoTramite();
+    //     $this->assertStringContainsString(mb_convert_encoding("Reprodução de último trâmite executado com sucesso!", 'UTF-8', 'ISO-8859-1'), $resultadoReproducao);
+    //     $this->refresh();
+    //     $this->waitUntil(function ($testCase) {
+    //         sleep(5);
+    //         $testCase->refresh();
+    //         $testCase->paginaProcesso->navegarParaConsultarAndamentos();
+    //         $mensagemTramite = mb_convert_encoding("Reprodução de último trâmite iniciado para o protocolo ".  $strProtocoloTeste, 'UTF-8', 'ISO-8859-1');
+    //         $testCase->assertTrue($testCase->paginaConsultarAndamentos->contemTramite($mensagemTramite));
+    //         return true;
+    //     }, PEN_WAIT_TIMEOUT);
+
+    // }
+    
+    /**
+     * Teste para verificar a reprodução de último tramite no destinatario
+     *
+     * @group envio
+     * @large
+     *
+     * @depends test_realizar_pedido_reproducao_ultimo_tramite
+     *
+     * @return void
+     */
+    // public function test_reproducao_ultimo_tramite()
+    // {
+    //     $strProtocoloTeste = self::$protocoloTeste;
+
+    //     $this->acessarSistema(self::$remetente['URL'], self::$remetente['SIGLA_UNIDADE'], self::$remetente['LOGIN'], self::$remetente['SENHA']);
+
+    //     $this->abrirProcesso($strProtocoloTeste);
+       
+    //     $this->waitUntil(function ($testCase) {
+    //         sleep(5);
+    //         $testCase->refresh();
+    //         $testCase->paginaProcesso->navegarParaConsultarAndamentos();
+    //         $mensagemTramite = mb_convert_encoding("Reprodução de último trâmite recebido na entidade", 'UTF-8', 'ISO-8859-1');
+    //         $testCase->assertTrue($testCase->paginaConsultarAndamentos->contemTramite($mensagemTramite));
+    //         return true;
+    //     }, PEN_WAIT_TIMEOUT);
+
+    // }
+
+    /**
+     * Teste para verificar a reprodução de último tramite no remetente
+     *
+     * @group envio
+     * @large
+     *
+     * @depends test_reproducao_ultimo_tramite
+     *
+     * @return void
+     */
+    // public function test_reproducao_ultimo_tramite_remetente_finalizado()
+    // {
+    //     $strProtocoloTeste = self::$protocoloTeste;
+
+    //     $this->acessarSistema(self::$destinatario['URL'], self::$destinatario['SIGLA_UNIDADE'], self::$destinatario['LOGIN'], self::$destinatario['SENHA']);
+
+    //     // 11 - Abrir protocolo na tela de controle de processos
+    //     $this->abrirProcesso($strProtocoloTeste);
+
+    //     $this->waitUntil(function ($testCase) {
+    //         sleep(5);
+    //         $testCase->refresh();
+    //         $testCase->paginaProcesso->navegarParaConsultarAndamentos();
+    //         $mensagemTramite = mb_convert_encoding("Reprodução de último trâmite finalizado para o protocolo ".  $strProtocoloTeste, 'UTF-8', 'ISO-8859-1');
+    //         $testCase->assertTrue($testCase->paginaConsultarAndamentos->contemTramite($mensagemTramite));
+    //         return true;
+    //     }, PEN_WAIT_TIMEOUT);
+        
+    // }
+
 
     /**
      * Teste de verificação do correto recebimento do processo com documento anexado no destinatário
@@ -218,7 +312,7 @@ class TramiteRecebimentoDocumentoAnexadoTest extends FixtureCenarioBaseTestCase
             'dataHoraDeProducao' => '2017-05-15T03:41:13',
             'dataHoraDeRegistro' => '2013-12-21T09:32:42-02:00',
             'produtor' => array(
-                'nome' => mb_convert_encoding(util::random_string(20), 'UTF-8', 'ISO-8859-1'),
+                'nome' => mb_convert_encoding(randomString(20), 'UTF-8', 'ISO-8859-1'),
                 'tipo' => "orgaopublico",
             ),
             'interessados' => array(
@@ -262,20 +356,20 @@ class TramiteRecebimentoDocumentoAnexadoTest extends FixtureCenarioBaseTestCase
         }
 
         $documentoDoProcesso = array(
-            'protocolo' => util::random_string(5),
+            'protocolo' => randomString(5),
             'nivelDeSigilo' => 1,
             'descricao' => $documentoTeste['DESCRICAO'],
             'dataHoraDeProducao' => '2017-05-15T03:41:13',
             'dataHoraDeRegistro' => '2013-12-21T09:32:42-02:00',
             'ordem' => $ordemDocumento,
             'produtor' => array(
-                'nome' => mb_convert_encoding(util::random_string(20), 'UTF-8', 'ISO-8859-1'),
+                'nome' => mb_convert_encoding(randomString(20), 'UTF-8', 'ISO-8859-1'),
                 "tipo" => "orgaopublico"
             ),
 
             'especie' => array(
                 'codigo' => 42,
-                'nomeNoProdutor' => mb_convert_encoding(util::random_string(20), 'UTF-8', 'ISO-8859-1')
+                'nomeNoProdutor' => mb_convert_encoding(randomString(20), 'UTF-8', 'ISO-8859-1')
             ),
 
             'interessados' => array(

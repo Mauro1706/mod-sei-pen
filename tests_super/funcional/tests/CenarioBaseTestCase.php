@@ -1,6 +1,5 @@
 <?php
 
-use \utilphp\util;
 use PHPUnit\Extensions\Selenium2TestCase;
 
 use function PHPSTORM_META\map;
@@ -51,6 +50,10 @@ class CenarioBaseTestCase extends Selenium2TestCase
     protected $paginaEnvioParcialListar = null;
     protected $paginaPenHipoteseLegalListar = null;
     protected $paginaMapUnidades = null;
+    protected $paginaAgendamentos = null;
+    protected $paginaTipoDocumento = null;
+    protected $paginaTipoProcesso = null;
+    protected $paginaUnidades = null;
 
     public function setUpPage(): void
     {
@@ -81,6 +84,10 @@ class CenarioBaseTestCase extends Selenium2TestCase
         $this->paginaEnvioParcialListar = new PaginaEnvioParcialListar($this);
         $this->paginaPenHipoteseLegalListar = new PaginaPenHipoteseLegalListar($this);
         $this->paginaMapUnidades = new PaginaMapUnidades($this);
+        $this->paginaAgendamentos = new PaginaAgendamentos($this);
+        $this->paginaTipoDocumento = new PaginaTipoDocumento($this);
+        $this->paginaTipoProcesso = new PaginaTipoProcesso($this);
+        $this->paginaUnidades = new PaginaUnidades($this);
         $this->currentWindow()->maximize();
     }
 
@@ -282,11 +289,17 @@ class CenarioBaseTestCase extends Selenium2TestCase
         $this->paginaBase->sairSistema();
     }
 
-    protected function abrirProcesso($protocolo)
+     protected function abrirProcesso($protocolo)
     {
-        $this->paginaBase->navegarParaControleProcesso();
+      $this->paginaBase->navegarParaControleProcesso();
+    try {
         $this->paginaControleProcesso->abrirProcesso($protocolo);
+    } catch (\Exception $e) {
+        $this->paginaBase->pesquisar($protocolo);
+        sleep(2);
+        $this->byXPath('(//a[@id="lnkInfraMenuSistema"])[2]')->click();
     }
+  }
 
     protected function abrirProcessoPelaDescricao($descricao)
     {
@@ -602,9 +615,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
     {
         return array(
             "TIPO_PROCESSO" => $contextoProducao['TIPO_PROCESSO'],
-            "DESCRICAO" => util::random_string(100),
+            "DESCRICAO" => randomString(100),
             "OBSERVACOES" => null,
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ORIGEM" => $contextoProducao['URL'],
         );
@@ -616,9 +629,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             'TIPO' => 'G', // Documento do tipo Gerado pelo sistema
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
-            "DESCRICAO" => trim(str_repeat(util::random_string(9) . ' ', 10)),
+            "DESCRICAO" => trim(str_repeat(randomString(9) . ' ', 10)),
             "OBSERVACOES" => null,
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ORDEM_DOCUMENTO_REFERENCIADO" => null,
             "ARQUIVO" => ".html",
@@ -639,9 +652,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
             "DATA_ELABORACAO" => '01/01/2017',
-            "DESCRICAO" => str_repeat(util::random_string(9) . ' ', 10),
-            "OBSERVACOES" => util::random_string(500),
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "DESCRICAO" => str_repeat(randomString(9) . ' ', 10),
+            "OBSERVACOES" => randomString(500),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "ORDEM_DOCUMENTO_REFERENCIADO" => $ordemDocumentoReferenciado,
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ARQUIVO" => $arquivos,
@@ -661,9 +674,9 @@ class CenarioBaseTestCase extends Selenium2TestCase
             "NUMERO" => null, //Gerado automaticamente no cadastramento do documento
             "TIPO_DOCUMENTO" => $contextoProducao['TIPO_DOCUMENTO'],
             "DATA_ELABORACAO" => '01/01/2017',
-            "DESCRICAO" => str_repeat(util::random_string(9) . ' ', 10),
-            "OBSERVACOES" => util::random_string(500),
-            "INTERESSADOS" => str_repeat(util::random_string(9) . ' ', 25),
+            "DESCRICAO" => str_repeat(randomString(9) . ' ', 10),
+            "OBSERVACOES" => randomString(500),
+            "INTERESSADOS" => str_repeat(randomString(9) . ' ', 25),
             "ORDEM_DOCUMENTO_REFERENCIADO" => $ordemDocumentoReferenciado,
             "RESTRICAO" => PaginaIniciarProcesso::STA_NIVEL_ACESSO_PUBLICO,
             "ARQUIVO" => $arquivos,
@@ -692,6 +705,10 @@ class CenarioBaseTestCase extends Selenium2TestCase
         $strTipoProcesso = mb_convert_encoding("Tipo de processo no órgão de origem: ", 'UTF-8', 'ISO-8859-1');
         $strTipoProcesso .= $processoTeste['TIPO_PROCESSO'];
         $processoTeste['OBSERVACOES'] = (!$devolucao) ? $strTipoProcesso : $processoTeste['OBSERVACOES'];
+       
+        $this->abrirProcesso($strProtocoloTeste);
+
+
         $this->validarDadosProcesso($processoTeste['DESCRICAO'], $processoTeste['RESTRICAO'], $processoTeste['OBSERVACOES'], $processoTeste['INTERESSADOS']);
 
         // 13 - Verificar recibos de trâmite

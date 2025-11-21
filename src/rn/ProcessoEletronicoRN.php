@@ -24,7 +24,10 @@ class ProcessoEletronicoRN extends InfraRN
   public static $TI_PROCESSO_ELETRONICO_PROCESSO_TRAMITE_EXTERNO = 'PEN_OPERACAO_EXTERNA';
   public static $TI_PROCESSO_ELETRONICO_PROCESSO_ABORTADO = 'PEN_EXPEDICAO_PROCESSO_ABORTADA';
   public static $TI_DOCUMENTO_AVULSO_RECEBIDO = 'PEN_DOCUMENTO_AVULSO_RECEBIDO';
-
+  public static $TI_PROCESSO_ELETRONICO_REPRODUCAO_ULTIMO_TRAMITE_EXPEDIDO = 'PEN_REPRODUCAO_ULTIMO_TRAMITE_EXPEDIDO';
+  public static $TI_PROCESSO_ELETRONICO_REPRODUCAO_ULTIMO_TRAMITE_RECEBIDO = 'PEN_REPRODUCAO_ULTIMO_TRAMITE_RECEBIDO';
+  public static $TI_PROCESSO_ELETRONICO_REPRODUCAO_ULTIMO_TRAMITE_FINALIZADO = 'PEN_REPRODUCAO_ULTIMO_TRAMITE_FINALIZADO';
+  
     /* TIPO DE PROTOCOLO RECEBIDO PELO BARRAMENTO - SE PROCESSO OU DOCUMENTO AVULSO */
   public static $STA_TIPO_PROTOCOLO_PROCESSO = 'P';
   public static $STA_TIPO_PROTOCOLO_DOCUMENTO_AVULSO = 'D';
@@ -176,6 +179,52 @@ class ProcessoEletronicoRN extends InfraRN
           throw new \Exception($mensagem);
       }
     }
+  }
+
+  /**
+   * Verifica se pode solicitar a reprodução do último trâmite de um processo eletrônico
+   *
+   * @param  int  $dblIdProcedimento
+   * @return bool
+   */
+  public static function podeSolicitarReproducaoUltimoTramite($dblIdProcedimento)
+  {
+    // $processoExpedido = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_EXPEDIDO);
+    // $processoRecebido = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_RECEBIDO);
+    // $processoTramiteCancelado = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_TRAMITE_CANCELADO);
+    // $processoTramiteRecusado = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_TRAMITE_RECUSADO);
+    // $processoAbortado = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_ABORTADO);
+
+    // $arrTiProcessoEletronico = [
+    //   $processoExpedido,
+    //   $processoRecebido,
+    //   $processoTramiteCancelado,
+    //   $processoTramiteRecusado,
+    //   $processoAbortado,
+    // ];
+
+    // $objAtividadeDTO = new AtividadeDTO();
+    // $objAtividadeDTO->setDblIdProtocolo($dblIdProcedimento);
+    // $objAtividadeDTO->setNumIdTarefa($arrTiProcessoEletronico, InfraDTO::$OPER_IN);
+    // $objAtividadeDTO->setOrdDthAbertura(InfraDTO::$TIPO_ORDENACAO_DESC);
+    // $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+    // $objAtividadeDTO->retNumIdAtividade();
+    // $objAtividadeDTO->retNumIdTarefa();
+    // $objAtividadeDTO->retDblIdProcedimentoProtocolo();
+  
+    // $objAtividadeRN = new AtividadeRN();
+    // $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+    // if ($objAtividadeDTO !== null) {
+    //   $naoPodeSolicitarReproducaoUltimoTramite = [
+    //     $processoExpedido, $processoTramiteCancelado, $processoTramiteRecusado, $processoAbortado
+    //   ];
+    //   if (in_array($objAtividadeDTO->getNumIdTarefa(), $naoPodeSolicitarReproducaoUltimoTramite)) {
+    //     return false;
+    //   }
+    // }
+
+    return false;
   }
 
     /**
@@ -821,6 +870,7 @@ class ProcessoEletronicoRN extends InfraRN
       $erroRequest = json_decode($e->getMessage());
       if ($erroRequest != null) {
           $mensagem = "Falha no envio externo do processo. Erro: {$erroRequest->codigoErro} - {$erroRequest->message}";
+          $mensagem = mb_convert_encoding($mensagem, 'ISO-8859-1', 'UTF-8');
       }
         $detalhes = $this->tratarFalhaWebService($e);
         throw new InfraException($mensagem, $e, $detalhes);
@@ -1588,9 +1638,12 @@ class ProcessoEletronicoRN extends InfraRN
         foreach ($arrObjItensSolicitados as $objItemSolicitado) {
           if(!is_null($objItemSolicitado)){
             $objItemSolicitado['hashes'] = is_array($objItemSolicitado['hashes']) ? $objItemSolicitado['hashes'] : array($objItemSolicitado['hashes']);
-    
-            if($objItemSolicitado['protocolo'] == $objComponenteDigitalDTO->getStrProtocolo() && in_array($strHashConteudo, $objItemSolicitado['hashes']) && !$objDocumento->retirado) {
+            if (!isset($arrayHashes)) {
+              $arrayHashes = $objItemSolicitado['hashes'];
+            }
+            if($objItemSolicitado['protocolo'] == $objComponenteDigitalDTO->getStrProtocolo() && in_array($strHashConteudo, $arrayHashes) && !$objDocumento->retirado) {
                     $objComponenteDigitalDTO->setStrSinEnviar("S");
+                    unset($arrayHashes[array_search($strHashConteudo, $arrayHashes)]);
             }
           }
         }
@@ -1612,7 +1665,9 @@ class ProcessoEletronicoRN extends InfraRN
       //Monta dados dos componentes digitais
       $arrObjComponenteDigitalDTO = array();
       $arrObjDocumento = self::obterDocumentosProtocolo($parObjProtocolo, true);
-
+      usort($arrObjDocumento, function($a, $b) {
+          return $b->ordem <=> $a->ordem;
+      }); // ordena $arrObjDocumento de forma decrescente de acordo com o atributo ordem
       $arrObjComponenteDigitalDTOAux = array();
     foreach ($arrObjDocumento as $objDocumento) {
         $quantidadeDeComponentesDigitais = count($objDocumento->componentesDigitais);
@@ -1674,9 +1729,12 @@ class ProcessoEletronicoRN extends InfraRN
           foreach ($arrObjItensSolicitados as $objItemSolicitado) {
             if(!is_null($objItemSolicitado)){
               $objItemSolicitado['hashes'] = is_array($objItemSolicitado['hashes']) ? $objItemSolicitado['hashes'] : array($objItemSolicitado['hashes']);
-
-              if($objItemSolicitado['protocolo'] == $objComponenteDigitalDTO->getStrProtocolo() && in_array($strHashConteudo, $objItemSolicitado['hashes']) && !$objDocumento->retirado) {
+              if (!isset($arrayHashes)) {
+                $arrayHashes = $objItemSolicitado['hashes'];
+              }
+              if($objItemSolicitado['protocolo'] == $objComponenteDigitalDTO->getStrProtocolo() && in_array($strHashConteudo, $arrayHashes) && !$objDocumento->retirado) {
                       $objComponenteDigitalDTO->setStrSinEnviar("S");
+                      unset($arrayHashes[array_search($strHashConteudo, $arrayHashes)]);
               }
             }
           }
@@ -2871,6 +2929,32 @@ class ProcessoEletronicoRN extends InfraRN
     }
   }
 
+  public function reproduzirUltimoTramite($nre, $idRepositorioDoDestinatario, $idEstruturaDoDestinatario)
+  {
+    try {
+        $endpoint = "NREs/{$nre}/destinatarios/{$idRepositorioDoDestinatario}/{$idEstruturaDoDestinatario}/reproducoes-de-tramite";
+        $objProcessoEletronicoRN = new ProcessoEletronicoRN();
+        $objResposta = $this->post($endpoint);
+      if ($objResposta != null) {
+        return $objResposta; 
+      } else {
+        return false;
+      }
+    } catch (Exception $e) {
+        $mensagem = "Falha na reprodução do último trâmite do processo";
+        $arrayException = json_decode($e->getMessage(), true);
+        $msg_esperada = "NRE, '$nre', já possui trâmite em andamento para este destinatário";
+        // Expressão regular para buscar o texto com o número do processo como coringa
+        $regex = '/Não é possível executar o serviço de reprodução de trâmite do processo \d{5}\.\d{6}\/\d{4}-\d{2}, pois não há componentes digitais válidos a serem reproduzidos/';
+        if (mb_convert_encoding($arrayException['message'], 'ISO-8859-1', 'UTF-8') == $msg_esperada || preg_match($regex, mb_convert_encoding($arrayException['message'], 'ISO-8859-1', 'UTF-8'))) {
+          return $arrayException;
+        } else {
+          $detalhes = $this->tratarFalhaWebService($e);
+          throw new InfraException($mensagem, $e, $detalhes);
+        }
+    }
+  }
+
   public function tratarCodigoErro($idRepositorioEstrutura, $stringJson, $mensagem)
     {
       try {
@@ -2926,8 +3010,6 @@ class ProcessoEletronicoRN extends InfraRN
         'exception' => $e->getMessage(),
         'details' => $e->hasResponse() ? (string) $e->getResponse()->getBody() : 'No response body'
       ], JSON_UNESCAPED_UNICODE);      
-      
-      $message = mb_convert_encoding($message, 'ISO-8859-1', 'UTF-8');  
           
       throw new Exception($message);  
 
