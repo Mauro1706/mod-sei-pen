@@ -206,20 +206,6 @@ class PENIntegracao extends SeiIntegracao
         $strAcoesProcedimento .= '<a onclick="return confirm(\\\'Confirma a remoção do processo do bloco de trâmite externo?\\\');" href="' . $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=pen_excluir_processo_em_bloco_tramite&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1')) . '" tabindex="' . $numTabBotao . '" class="botaoSEI"> <img src="'.ProcessoEletronicoINT::getCaminhoIcone("/pen_processo_bloco_excluir.svg", $this->getDiretorioImagens()) .'" title="Remover Processo do Bloco de Trâmite" alt="Remover Processo do Bloco de Trâmite"/></a>';
     }
 
-      //Apresenta o botão da página de recibos
-    if($bolAcaoExpedirProcesso) {
-        $objProcessoEletronicoDTO = new ProcessoEletronicoDTO();
-        $objProcessoEletronicoDTO->retDblIdProcedimento();
-        $objProcessoEletronicoDTO->setDblIdProcedimento($dblIdProcedimento);
-        $objProcessoEletronicoRN = new ProcessoEletronicoRN();
-      if($objProcessoEletronicoRN->contar($objProcessoEletronicoDTO) != 0) {
-          $numTabBotao = $objPaginaSEI->getProxTabBarraComandosSuperior();
-          $strAcoesProcedimento .= '<a href="' . $objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_estado&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1') . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
-          $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/pen_consultar_recibos.png", $this->getDiretorioImagens()) . ' alt="Consultar Recibos" title="Consultar Recibos"/>';
-          $strAcoesProcedimento .= '</a>';
-      }
-    }
-
     $objProcessoEletronicoDTO = new ProcessoEletronicoDTO();
     $objProcessoEletronicoDTO->setDblIdProcedimento($dblIdProcedimento);
     $objTramiteBD = new TramiteBD(BancoSEI::getInstance());
@@ -230,7 +216,21 @@ class PENIntegracao extends SeiIntegracao
       $objTramiteDTO = $objTramiteDTO->getStrStaTipoTramite() == ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO;
       if ($objTramiteDTO) {
         $strAcoesProcedimento .= '<a href="' . $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1')) . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
-        $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/refresh_icon_no_background.svg", $this->getDiretorioImagens()) . '  alt="Sincronizar Processo" title="Sincronizar Processo" />';
+        $strAcoesProcedimento .= '<img class="infraCorBarraSistema" style="padding: 3px 0px 0px 2px;" src=' . ProcessoEletronicoINT::getCaminhoIcone("/sincronizacao_manual_de_processo.svg", $this->getDiretorioImagens()) . '  alt="Sincronizar Processo" title="Sincronizar Processo" />';
+        $strAcoesProcedimento .= '</a>';
+      }
+    }
+
+      //Apresenta o botão da página de recibos
+    if($bolAcaoExpedirProcesso) {
+        $objProcessoEletronicoDTO = new ProcessoEletronicoDTO();
+        $objProcessoEletronicoDTO->retDblIdProcedimento();
+        $objProcessoEletronicoDTO->setDblIdProcedimento($dblIdProcedimento);
+        $objProcessoEletronicoRN = new ProcessoEletronicoRN();
+      if($objProcessoEletronicoRN->contar($objProcessoEletronicoDTO) != 0) {
+          $numTabBotao = $objPaginaSEI->getProxTabBarraComandosSuperior();
+          $strAcoesProcedimento .= '<a href="' . $objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_estado&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1') . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
+          $strAcoesProcedimento .= '<img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/pen_consultar_recibos.png", $this->getDiretorioImagens()) . ' alt="Consultar Recibos" title="Consultar Recibos"/>';
         $strAcoesProcedimento .= '</a>';
       }
     }
