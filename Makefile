@@ -28,7 +28,7 @@ SEI_CONFIG_DIR = dist/sei/config/mod-pen
 SEI_BIN_DIR = dist/sei/bin/mod-pen
 SEI_MODULO_DIR = dist/sei/web/modulos/pen
 SIP_SCRIPTS_DIR = dist/sip/scripts/mod-pen
-PEN_MODULO_COMPACTADO = mod-sei-tramitagovbr-$(VERSAO_MODULO)-compat.zip
+PEN_MODULO_COMPACTADO = mod-sei-tramitagovbr-$(VERSAO_MODULO).zip
 PEN_TEST_FUNC = tests_$(sistema)/funcional
 PEN_TEST_UNIT = tests_$(sistema)/unitario
 PARALLEL_TEST_NODES = 5
@@ -316,7 +316,7 @@ stop-test-container:
 	fi;
 
 vendor: composer.json
-	$(CMD_COMPOSE_FUNC) run -w /tests php-test-functional bash -c './composer.phar install'
+	$(CMD_COMPOSE_FUNC) run --rm -w /tests php-test-functional bash -c './composer.phar install'
 
 cria_json_compatibilidade:
 	$(shell ./gerar_json_compatibilidade.sh)

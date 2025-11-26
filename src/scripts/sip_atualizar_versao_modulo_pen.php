@@ -1,7 +1,7 @@
 <?php
 
 // Identificação da versão do módulo mod-sei-pen. Este deve estar sempre sincronizado com a versão definida em PENIntegracao.php
-define("VERSAO_MODULO_PEN", "4.0.1");
+define("VERSAO_MODULO_PEN", "4.0.2");
 
 $dirSipWeb = !defined("DIR_SIP_WEB") ? getenv("DIR_SIP_WEB") ?: __DIR__ . "/../../web" : DIR_SIP_WEB;
 require_once $dirSipWeb . '/Sip.php';
@@ -303,6 +303,8 @@ class PenAtualizarSipRN extends InfraRN
             $this->instalarV4000();
         case '4.0.0':
             $this->instalarV4010();
+        case '4.0.1':
+          $this->instalarV4020();
         
             break; // Ausência de [break;] proposital para realizar a atualização incremental de versões
         default:
@@ -2131,7 +2133,8 @@ class PenAtualizarSipRN extends InfraRN
 
       $idMenuTramita = $objItemMenuDTO->getNumIdItemMenu();
       $numIdRecurso = $this->criarRecurso('pen_procedimento_expedido_listar', 'Processos em Tramitação Externa', $numIdSistema);
-
+      ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_procedimento_expedido_listar');
+      
       $idMenuProcessoTramitadosExterno = $this->criarMenu('Processos em Tramitação Externa', 57, $idMenuTramita, $numIdMenu, $numIdRecurso, $numIdSistema);
       $this->cadastrarRelPerfilItemMenu($idPerfilBasico, $numIdRecurso, $numIdMenu, $idMenuProcessoTramitadosExterno);
       $this->excluirRelPerfilItemMenu($idPerfilAdm, $numIdRecurso, $numIdMenu, $idMenuProcessoTramitadosExterno);
@@ -2139,7 +2142,6 @@ class PenAtualizarSipRN extends InfraRN
       $this->renomearRecurso($numIdSistema, 'pen_expedir_lote', 'pen_expedir_bloco');
 
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_map_envio_parcial_visualizar');
-      ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_procedimento_expedido_listar');
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'md_pen_tramita_em_bloco');
       ScriptSip::adicionarRecursoPerfil($numIdSistema, $idPerfilBasico, 'pen_expedir_bloco');
       ScriptSip::removerRecursoPerfil($numIdSistema, 'pen_expedir_bloco', $idPerfilAdm);
@@ -2171,6 +2173,11 @@ class PenAtualizarSipRN extends InfraRN
     protected function instalarV4010()
     {
       $this->atualizarNumeroVersao("4.0.1");
+  }
+
+  protected function instalarV4020()
+  {
+    $this->atualizarNumeroVersao("4.0.2");
   }
 
     /**
