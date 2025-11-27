@@ -203,7 +203,28 @@ class ExpedirProcedimentoRN extends InfraRN
 
         if ($solicitarSincronizarTramite && $this->objProcessoEletronicoRN->validarProcessoMultiplosOrgaos($objProcedimentoDTO->getDblIdProcedimento())) {
             // Solicitar sincronização do documentos pendentes
-            $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
+            $objTramite = $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
+
+            $idAtividadeExpedicao = $this->bloquearProcedimentoExpedicao($objExpedirProcedimentoDTO, $arrProcesso['idProcedimentoSEI']);
+
+            $this->objProcessoEletronicoRN->cadastrarTramiteDeProcesso(
+                $arrProcesso['idProcedimentoSEI'],
+                $objTramite->NRE,
+                $objTramite->IDT,
+                ProcessoEletronicoRN::$STA_TIPO_TRAMITE_ENVIO,
+                $objTramite->dataHoraDeRegistroDoTramite,
+                $objExpedirProcedimentoDTO->getNumIdRepositorioOrigem(),
+                $objExpedirProcedimentoDTO->getNumIdUnidadeOrigem(),
+                $objExpedirProcedimentoDTO->getNumIdRepositorioDestino(),
+                $objExpedirProcedimentoDTO->getNumIdUnidadeDestino(),
+                $arrProcesso,
+                $objTramite->ticketParaEnvioDeComponentesDigitais,
+                $objTramite->processosComComponentesDigitaisSolicitados,
+                $bolSinProcessamentoEmBloco,
+                $numIdUnidade
+            );
+
+            $this->objProcessoEletronicoRN->cadastrarTramitePendente($objTramite->IDT, $idAtividadeExpedicao);
 
             $this->gravarLogDebug("Solicitação de sincronização de trâmite para o processo {$objMetadadosProcessoTramiteAnterior->IDT} foi realizada.", 0, true);
             $this->barraProgresso->mover($this->barraProgresso->getNumMax());
@@ -3645,6 +3666,9 @@ class ExpedirProcedimentoRN extends InfraRN
 
       $objAtividadeRN = new AtividadeRN();
       $objAtividadeRN->gerarInternaRN0727($objAtividadeDTO);
+
+      $objProcessoEletronicoRN = new ProcessoEletronicoRN();
+      $objProcessoEletronicoRN->validarProcessoRecusaCancelamento($dblIdProcedimento);
   }
 
     /**

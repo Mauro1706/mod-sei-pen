@@ -254,6 +254,7 @@ class ProcessarPendenciasRN extends InfraRN
         $this->gravarLogDebug("Processando recebimento de protocolo [receberProcedimento] com IDT " . $idTramite, 0, true);
         $numTempoInicialRecebimento = microtime(true);
 
+
         $numIdentificacaoTramite = intval($idTramite);
         $objReceberProcedimentoRN = new ReceberProcedimentoRN();
         $objReceberProcedimentoRN->receberProcedimento($numIdentificacaoTramite);
@@ -273,6 +274,20 @@ class ProcessarPendenciasRN extends InfraRN
           $objProcessoEletronicoRN = new ProcessoEletronicoRN();
           $strMensagem = ($e instanceof InfraException) ? $e->__toString() : $e->getMessage();
           $objProcessoEletronicoRN->recusarTramite($idTramite, $strMensagem, ProcessoEletronicoRN::MTV_RCSR_TRAM_CD_OUTROU);
+          
+          try {
+            $objProtocoloDTO = new ProtocoloDTO();
+            $objProtocoloDTO->setStrProtocoloFormatado($objMetadadosProcedimento->processo->protocolo);
+            $objProtocoloDTO->retTodos();
+
+            $objProtocoloRN = new ProtocoloRN();
+            $objProtocoloDTO = $objProtocoloRN->consultarRN0186($objProtocoloDTO);
+            if ($objProtocoloDTO) {
+              $objProcessoEletronicoRN->validarProcessoRecusaCancelamento($objProtocoloDTO->getDblIdProtocolo(), $strMensagem);
+            }
+          } catch (Exception $ex) {
+            //throw $ex;
+          }
       }
 
         throw $e;
