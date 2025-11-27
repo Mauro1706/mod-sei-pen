@@ -298,16 +298,34 @@ class ReceberReciboTramiteRN extends InfraRN
       $objAtividadeRN->gerarInternaRN0727($objAtividadeDTO);
 
       if ($manterProcessoAberto == true) {
-        try {
-          $objReabrirProcessoDTO = new ReabrirProcessoDTO();
-          $objReabrirProcessoDTO->setDblIdProcedimento($numIdProcedimento);
-          $objReabrirProcessoDTO->setNumIdUnidade(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
-          $objReabrirProcessoDTO->setNumIdUsuario(SessaoSEI::getInstance()->getNumIdUsuario());
+        $arrTiProcessoEletronico = [
+          ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS),
+          ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS)
+        ];
 
-          $objProcedimentoRN = new ProcedimentoRN();
-          $objProcedimentoRN->reabrirRN0966($objReabrirProcessoDTO);
-        } catch (\Throwable $th) {
-          //throw $th;
+        $objAtividadeDTO = new AtividadeDTO();
+        $objAtividadeDTO->setDblIdProtocolo($numIdProcedimento);
+        $objAtividadeDTO->setNumIdTarefa($arrTiProcessoEletronico, InfraDTO::$OPER_IN);
+        $objAtividadeDTO->setOrdDthAbertura(InfraDTO::$TIPO_ORDENACAO_DESC);
+        $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+        $objAtividadeDTO->retNumIdAtividade();
+        $objAtividadeDTO->retNumIdTarefa();
+      
+        $objAtividadeRN = new AtividadeRN();
+        $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+        if ($objAtividadeDTO == null) {
+          try {
+            $objReabrirProcessoDTO = new ReabrirProcessoDTO();
+            $objReabrirProcessoDTO->setDblIdProcedimento($numIdProcedimento);
+            $objReabrirProcessoDTO->setNumIdUnidade(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+            $objReabrirProcessoDTO->setNumIdUsuario(SessaoSEI::getInstance()->getNumIdUsuario());
+
+            $objProcedimentoRN = new ProcedimentoRN();
+            $objProcedimentoRN->reabrirRN0966($objReabrirProcessoDTO);
+          } catch (\Throwable $th) {
+            //throw $th;
+          }
         }
       }
   }

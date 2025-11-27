@@ -38,34 +38,13 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       //Busca metadados do processo registrado em trâmite anterior
       $objMetadadosProcessoTramiteAnterior = $this->consultarMetadadosPEN($dblIdProcedimento);
 
-      $arrProcesso = $this->construirProcessoREST($dblIdProcedimento, $objExpedirProcedimentoDTO->getArrIdProcessoApensado(), $objMetadadosProcessoTramiteAnterior);
-
       $objProcessoEletronicoRN = new ProcessoEletronicoRN();
       $objProcessoEletronicoRN->gravarAtividadeMuiltiplosOrgaos($objProcedimentoDTO, $objMetadadosProcessoTramiteAnterior->IDT, ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS);
 
       // Solicitar sincronização do documentos pendentes
       $numIdTramite = $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
 
-      $objTramite = $this->objProcessoEletronicoRN->solicitarMetadados($numIdTramite);
-
-      $idAtividadeExpedicao = $this->bloquearProcedimentoExpedicao($objExpedirProcedimentoDTO, $dblIdProcedimento);
-      
-      $this->objProcessoEletronicoRN->cadastrarTramiteDeProcesso(
-          $dblIdProcedimento,
-          $objTramite->NRE,
-          $objTramite->IDT,
-          ProcessoEletronicoRN::$STA_TIPO_TRAMITE_ENVIO,
-          $objTramite->dataHoraDeRegistroDoTramite ?: date('Y-m-d H:i:s'),
-          $objExpedirProcedimentoDTO->getNumIdRepositorioOrigem(),
-          $objExpedirProcedimentoDTO->getNumIdUnidadeOrigem(),
-          $objExpedirProcedimentoDTO->getNumIdRepositorioDestino(),
-          $objExpedirProcedimentoDTO->getNumIdUnidadeDestino(),
-          $arrProcesso,
-          $objTramite->ticketParaEnvioDeComponentesDigitais,
-          $objTramite->processosComComponentesDigitaisSolicitados
-      );
-
-      $this->objProcessoEletronicoRN->cadastrarTramitePendente($objTramite->IDT, $idAtividadeExpedicao);
+      $this->bloquearProcedimentoExpedicao($objExpedirProcedimentoDTO, $dblIdProcedimento);
 
       $this->gravarLogDebug("Solicitação de sincronização de trâmite para o processo {$objMetadadosProcessoTramiteAnterior->IDT} foi realizada.", 0, true);
       $this->barraProgresso->mover($this->barraProgresso->getNumMax());
@@ -86,7 +65,6 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       SessaoSEI::getInstance()->validarAuditarPermissao('pen_procedimento_expedir', __METHOD__, $objExpedirProcedimentoDTO);
       $dblIdProcedimento = $objExpedirProcedimentoDTO->getDblIdProcedimento();
 
-      $bolSinProcessamentoEmBloco = $objExpedirProcedimentoDTO->getBolSinProcessamentoEmBloco();
       $numIdUnidade = $objExpedirProcedimentoDTO->getNumIdUnidade();
 
       $objInfraException = new InfraException();
@@ -94,17 +72,13 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       $objProcedimentoDTO = $this->consultarProcedimento($dblIdProcedimento);
       $objProcedimentoDTO->setArrObjDocumentoDTO($this->listarDocumentos($dblIdProcedimento));
       $objProcedimentoDTO->setArrObjParticipanteDTO($this->listarInteressados($dblIdProcedimento));
-      $this->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, null, $bolSinProcessamentoEmBloco);
+      $this->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, null, false);
       $this->validarParametrosExpedicao($objInfraException, $objExpedirProcedimentoDTO);
 
       //Apresentao da mensagens de validao na janela da barra de progresso
       if ($objInfraException->contemValidacoes() && $objExpedirProcedimentoDTO->getBolSinEnvioAutoMultiplosOrgaos() === false) {
-        if (!$bolSinProcessamentoEmBloco) {
-          $objInfraException->lancarValidacoes();
-        }
+        $objInfraException->lancarValidacoes();
       }
-
-      ModPenUtilsRN::simularLoginUnidadeRecebimento();
 
       //Busca metadados do processo registrado em trâmite anterior
       $objMetadadosProcessoTramiteAnterior = $this->consultarMetadadosPEN($dblIdProcedimento);
@@ -168,13 +142,13 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
             $arrProcesso,
             $objTramite->ticketParaEnvioDeComponentesDigitais,
             $objTramite->processosComComponentesDigitaisSolicitados,
-            $bolSinProcessamentoEmBloco,
+            false,
             $numIdUnidade
           );
 
           $this->objProcessoEletronicoRN->cadastrarTramitePendente($objTramite->IDT, $idAtividadeExpedicao);
 
-          $this->enviarComponentesDigitais($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo'], $bolSinProcessamentoEmBloco);
+          $this->enviarComponentesDigitais($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo'], false);
 
           $this->objProcedimentoAndamentoRN->cadastrar(ProcedimentoAndamentoDTO::criarAndamento('Concluído envio dos componentes do processo', 'S'));
 
