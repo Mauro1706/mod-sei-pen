@@ -65,7 +65,6 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       SessaoSEI::getInstance()->validarAuditarPermissao('pen_procedimento_expedir', __METHOD__, $objExpedirProcedimentoDTO);
       $dblIdProcedimento = $objExpedirProcedimentoDTO->getDblIdProcedimento();
 
-      $bolSinProcessamentoEmBloco = $objExpedirProcedimentoDTO->getBolSinProcessamentoEmBloco();
       $numIdUnidade = $objExpedirProcedimentoDTO->getNumIdUnidade();
 
       $objInfraException = new InfraException();
@@ -73,17 +72,13 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       $objProcedimentoDTO = $this->consultarProcedimento($dblIdProcedimento);
       $objProcedimentoDTO->setArrObjDocumentoDTO($this->listarDocumentos($dblIdProcedimento));
       $objProcedimentoDTO->setArrObjParticipanteDTO($this->listarInteressados($dblIdProcedimento));
-      $this->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, null, $bolSinProcessamentoEmBloco);
+      $this->validarPreCondicoesExpedirProcedimento($objInfraException, $objProcedimentoDTO, null, false);
       $this->validarParametrosExpedicao($objInfraException, $objExpedirProcedimentoDTO);
 
       //Apresentao da mensagens de validao na janela da barra de progresso
       if ($objInfraException->contemValidacoes() && $objExpedirProcedimentoDTO->getBolSinEnvioAutoMultiplosOrgaos() === false) {
-        if (!$bolSinProcessamentoEmBloco) {
-          $objInfraException->lancarValidacoes();
-        }
+        $objInfraException->lancarValidacoes();
       }
-
-      ModPenUtilsRN::simularLoginUnidadeRecebimento();
 
       //Busca metadados do processo registrado em trâmite anterior
       $objMetadadosProcessoTramiteAnterior = $this->consultarMetadadosPEN($dblIdProcedimento);
@@ -147,13 +142,13 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
             $arrProcesso,
             $objTramite->ticketParaEnvioDeComponentesDigitais,
             $objTramite->processosComComponentesDigitaisSolicitados,
-            $bolSinProcessamentoEmBloco,
+            false,
             $numIdUnidade
           );
 
           $this->objProcessoEletronicoRN->cadastrarTramitePendente($objTramite->IDT, $idAtividadeExpedicao);
 
-          $this->enviarComponentesDigitais($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo'], $bolSinProcessamentoEmBloco);
+          $this->enviarComponentesDigitais($objTramite->NRE, $objTramite->IDT, $arrProcesso['protocolo'], false);
 
           $this->objProcedimentoAndamentoRN->cadastrar(ProcedimentoAndamentoDTO::criarAndamento('Concluído envio dos componentes do processo', 'S'));
 
@@ -245,10 +240,6 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       $objCabecalho = $this->construirCabecalho($objExpedirProcedimentoDTO, $strNumeroRegistro, $dblIdProcedimento);
       //Construção do processo para envio
       $arrProcesso = $this->construirProcessoREST($dblIdProcedimento, $objExpedirProcedimentoDTO->getArrIdProcessoApensado(), $objMetadadosProcessoTramiteAnterior, true);
-
-      //Cancela pedido de sincronização para validar envio de sem nenhum documento
-      $objMetadadosProcedimento = $objExpedirProcedimentoDTO->getObjMetadadosProcedimento();
-      $this->objProcessoEletronicoRN->cancelarTramite($objMetadadosProcedimento->IDT);
 
       $param = [
         'novoTramiteDeProcesso' => [
@@ -372,6 +363,16 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       $numTempoTotalEnvio = round(microtime(true) - $numTempoInicialEnvio, 2);
       $this->gravarLogDebug("Finalizado o envio de protocolo com IDProcedimento $numIDT(Tempo total: {$numTempoTotalEnvio}s)", 0, true);
     } catch (\Exception $e) {
+      //Não recusa trâmite caso o processo atual não possa ser desbloqueado, evitando que o processo fique aberto em dois sistemas ao mesmo tempo
+      $bolDeveRecusarTramite = !($e instanceof InfraException && $e->getObjException() != null && $e->getObjException() instanceof ProcessoNaoPodeSerDesbloqueadoException);
+      // ou caso reprodução de ultimo tramite
+      $bolDeveRecusarTramite = $bolDeveRecusarTramite && !$objMetadadosProcedimento->metadados->reproducaoDeTramite;
+        
+      if($bolDeveRecusarTramite) {
+          $strMensagem = ($e instanceof InfraException) ? $e->__toString() : $e->getMessage();
+          $objProcessoEletronicoRN->recusarTramite($idTramite, $strMensagem, ProcessoEletronicoRN::MTV_RCSR_TRAM_CD_OUTROU);
+      }
+
       $this->gravarLogDebug("Erro processando envio de sincronização de tramite: $e", 0, true);
       throw new InfraException('Módulo do Tramita: Falha de comunicação com o serviços de integração. Por favor, tente novamente mais tarde.', $e);
     }

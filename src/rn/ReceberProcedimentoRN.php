@@ -577,6 +577,9 @@ class ReceberProcedimentoRN extends InfraRN
         $this->gravarLogDebug("Notificando serviços do Tramita GOV.BR sobre ciência da recusa do trâmite " . $numIdTramite, 2);
         $this->objProcessoEletronicoRN->cienciaRecusa($numIdTramite);
 
+        // Valida as pós-condições de recusa/cancelamento de processo de sincronização
+        $motivoRecusa = mb_convert_encoding($this->objProcessoEletronicoRN->reduzirCampoTexto($tramite->justificativaDaRecusa, 500), 'ISO-8859-1', 'UTF-8');
+        $this->objProcessoEletronicoRN->validarProcessoRecusaCancelamento($objProcessoEletronicoDTO->getDblIdProcedimento(), $motivoRecusa);
     } catch (Exception $e) {
         $mensagemErro = InfraException::inspecionar($e);
         $this->gravarLogDebug($mensagemErro);

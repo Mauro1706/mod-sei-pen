@@ -37,6 +37,7 @@ try {
       $objProcessoEletronicoRN = new ProcessoEletronicoRN();
       $numNRE = $objTramiteDTO->getStrNumeroRegistro();
 
+      $objProcessoEletronicoRN->validarProcessoRecusaCancelamento($idProcedimento);
       $tramitePendencia = $objProcessoEletronicoRN->consultarTramites(null, $numNRE, null, null, null, null, ProcessoEletronicoRN::$STA_SITUACAO_TRAMITE_SOLICITACAO_PENDENCIA);
       
       if (count($tramitePendencia) == 0) {
@@ -63,7 +64,6 @@ try {
 
         $objProcessoEletronicoRN->gravarAtividadeMuiltiplosOrgaos($objProcedimentoDTO, $objTramiteDTO->getNumIdTramite(), ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS);
 
-        
         $objProcessoEletronicoRN->solicitarSincronizarTramite($objTramiteDTO->getNumIdTramite());
       }
     } 

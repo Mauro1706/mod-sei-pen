@@ -203,8 +203,7 @@ try {
 
           $enviarDireto = false;
           $arrIdTarefaPedisoSincronizacao = [
-            ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS),
-            ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS)
+            ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS)
           ];
           if ($objAtividadeDTO !== null && in_array($objAtividadeDTO->getNumIdTarefa(), $arrIdTarefaPedisoSincronizacao)) {
             $enviarDireto = true;

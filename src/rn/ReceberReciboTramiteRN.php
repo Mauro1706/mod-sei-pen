@@ -173,24 +173,6 @@ class ReceberReciboTramiteRN extends InfraRN
     }
   }
 
-  private function validarManterProcessoAbertoMultiplosOrgaos($numIdTramite)
-  {
-      $objMetadados = $this->objProcessoEletronicoRN->solicitarMetadados($numIdTramite);
-      $propriedadesAdicionais = isset($objMetadados->propriedadesAdicionais)
-              ? ($objMetadados->propriedadesAdicionais ?: [])
-              : [];
-      if (in_array('multiplosOrgaos', array_column($propriedadesAdicionais, 'chave'))) {
-        foreach ($propriedadesAdicionais as $key => $valor) {
-          if ($valor->chave === 'multiplosOrgaos' && $valor->valor === 'true') {
-            return true;
-            break;
-          }
-        }
-      }
-        
-      return false;
-  }
-
   private function registrarRecebimentoRecibo($numIdProcedimento, $strProtocoloFormatado, $numIdTramite)
     {
       //REALIZA A CONCLUSÃO DO PROCESSO
@@ -199,8 +181,30 @@ class ReceberReciboTramiteRN extends InfraRN
 
       $objSeiRN = new SeiRN();
       $bolReproducaoUltimoTramite = false;
+      
+      $arrObjTramite = $this->objProcessoEletronicoRN->consultarTramites($numIdTramite);
+
+      $objTramite = array_pop($arrObjTramite);
+      
+      $manterProcessoAberto = false;
+      $objMetadados = $this->objProcessoEletronicoRN->solicitarMetadados($numIdTramite);
+      // Verificar se o processo é de múltiplos órgãos
+      $propriedadesAdicionais = isset($objMetadados->propriedadesAdicionais)
+              ? ($objMetadados->propriedadesAdicionais ?: [])
+              : [];
+      if (in_array('multiplosOrgaos', array_column($propriedadesAdicionais, 'chave'))) {
+        foreach ($propriedadesAdicionais as $valor) {
+          if ($valor->chave === 'multiplosOrgaos' && $valor->valor === 'true') {
+            $manterProcessoAberto = true;
+            break;
+          }
+        }
+      }
+
     try {
-        $objSeiRN->concluirProcesso($objEntradaConcluirProcessoAPI);
+        if ($manterProcessoAberto == false) {
+          $objSeiRN->concluirProcesso($objEntradaConcluirProcessoAPI);
+        }
     } catch (Exception $e) {
         //Registra falha em log de debug mas não gera rollback na transação.
         //O rollback da transação poderia deixar a situação do processo inconsistênte já que o Barramento registrou anteriormente que o
@@ -216,10 +220,6 @@ class ReceberReciboTramiteRN extends InfraRN
       $objAtributoAndamentoDTO->setStrValor($strProtocoloFormatado);
       $objAtributoAndamentoDTO->setStrIdOrigem($numIdProcedimento);
       $arrObjAtributoAndamentoDTO[] = $objAtributoAndamentoDTO;
-
-      $arrObjTramite = $this->objProcessoEletronicoRN->consultarTramites($numIdTramite);
-
-      $objTramite = array_pop($arrObjTramite);
 
       $objEstrutura = $this->objProcessoEletronicoRN->consultarEstrutura(
           $objTramite->destinatario->identificacaoDoRepositorioDeEstruturas,
@@ -296,5 +296,37 @@ class ReceberReciboTramiteRN extends InfraRN
 
       $objAtividadeRN = new AtividadeRN();
       $objAtividadeRN->gerarInternaRN0727($objAtividadeDTO);
+
+      if ($manterProcessoAberto == true) {
+        $arrTiProcessoEletronico = [
+          ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS),
+          ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS)
+        ];
+
+        $objAtividadeDTO = new AtividadeDTO();
+        $objAtividadeDTO->setDblIdProtocolo($numIdProcedimento);
+        $objAtividadeDTO->setNumIdTarefa($arrTiProcessoEletronico, InfraDTO::$OPER_IN);
+        $objAtividadeDTO->setOrdDthAbertura(InfraDTO::$TIPO_ORDENACAO_DESC);
+        $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
+        $objAtividadeDTO->retNumIdAtividade();
+        $objAtividadeDTO->retNumIdTarefa();
+      
+        $objAtividadeRN = new AtividadeRN();
+        $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
+
+        if ($objAtividadeDTO == null) {
+          try {
+            $objReabrirProcessoDTO = new ReabrirProcessoDTO();
+            $objReabrirProcessoDTO->setDblIdProcedimento($numIdProcedimento);
+            $objReabrirProcessoDTO->setNumIdUnidade(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+            $objReabrirProcessoDTO->setNumIdUsuario(SessaoSEI::getInstance()->getNumIdUsuario());
+
+            $objProcedimentoRN = new ProcedimentoRN();
+            $objProcedimentoRN->reabrirRN0966($objReabrirProcessoDTO);
+          } catch (\Throwable $th) {
+            //throw $th;
+          }
+        }
+      }
   }
 }
