@@ -44,8 +44,6 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       // Solicitar sincronização do documentos pendentes
       $numIdTramite = $this->objProcessoEletronicoRN->solicitarSincronizarTramite($objMetadadosProcessoTramiteAnterior->IDT);
 
-      $this->bloquearProcedimentoExpedicao($objExpedirProcedimentoDTO, $dblIdProcedimento);
-
       $this->gravarLogDebug("Solicitação de sincronização de trâmite para o processo {$objMetadadosProcessoTramiteAnterior->IDT} foi realizada.", 0, true);
       $this->barraProgresso->mover($this->barraProgresso->getNumMax());
       $this->barraProgresso->setStrRotulo(ProcessoEletronicoINT::TEE_EXPEDICAO_ETAPA_CONCLUSAO);
@@ -223,6 +221,8 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       
       $this->objProcessoEletronicoRN->cadastrarAtividadePedidoSincronizacao($objProcedimentoDTO, ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS_RECEBIDO);
 
+      $this->validarSincronizacaoProcessoSigiloso($dblIdProcedimento);
+
       //Busca metadados do processo registrado em trâmite anterior
       $objMetadadosProcessoTramiteAnterior = $objExpedirProcedimentoDTO->getObjMetadadosProcedimento();
 
@@ -375,6 +375,20 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
 
       $this->gravarLogDebug("Erro processando envio de sincronização de tramite: $e", 0, true);
       throw new InfraException('Módulo do Tramita: Falha de comunicação com o serviços de integração. Por favor, tente novamente mais tarde.', $e);
+    }
+  }
+
+  /**
+   * Valida se o processo a ser sincronizado é sigiloso
+   *
+   * @param  mixed $dblIdProcedimento
+   * @return void
+   */
+  public function validarSincronizacaoProcessoSigiloso($dblIdProcedimento)
+  {
+    $objProcedimentoDTO = $this->consultarProcedimento($dblIdProcedimento);
+    if ($objProcedimentoDTO->getStrStaNivelAcessoLocalProtocolo() == ProtocoloRN::$NA_SIGILOSO) {
+        throw new InfraException('Não é possível sincronizar um processo com informações sigilosas.');
     }
   }
 }

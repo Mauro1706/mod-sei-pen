@@ -175,7 +175,7 @@ class PENIntegracao extends SeiIntegracao
       $bolUnidadeMapeada = $objTramiteEmBlocoRN->existeUnidadeMapeadaParaUnidadeLogada();
 
       //Apresenta o botão de expedir processo
-    if ($bolUnidadeMapeada && !$bolProcessoEmBloco && $bolFlagAberto && $bolAcaoExpedirProcesso && $bolProcessoEstadoNormal && $objProcedimentoDTO->getStrStaNivelAcessoGlobalProtocolo() != ProtocoloRN::$NA_SIGILOSO) {
+    if ($bolUnidadeMapeada && !$bolProcessoEmBloco && $bolFlagAberto && $bolAcaoExpedirProcesso && $bolProcessoEstadoNormal) {
         $numTabBotao = $objPaginaSEI->getProxTabBarraComandosSuperior();
         $strAcoesProcedimento .= '<a id="validar_expedir_processo" href="' . $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_expedir&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1')) . '" tabindex="' . $numTabBotao . '" class="botaoSEI"><img class="infraCorBarraSistema" src=' . ProcessoEletronicoINT::getCaminhoIcone("/pen_expedir_procedimento.gif", $this->getDiretorioImagens()) . ' alt="Envio Externo de Processo" title="Envio Externo de Processo" /></a>';
     }
@@ -212,7 +212,7 @@ class PENIntegracao extends SeiIntegracao
 
     $objTramiteDTO = $objTramiteBD->consultarPrimeiroTramite($objProcessoEletronicoDTO);
 
-    if ($bolFlagAberto && !is_null($objTramiteDTO)) {
+    if ($bolFlagAberto && !is_null($objTramiteDTO) && $objProcedimentoDTO->getStrStaNivelAcessoGlobalProtocolo() != ProtocoloRN::$NA_SIGILOSO) {
       $objTramiteDTO = $objTramiteDTO->getStrStaTipoTramite() == ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO;
       if ($objTramiteDTO) {
         $strAcoesProcedimento .= '<a href="' . $objPaginaSEI->formatarXHTML($objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem=procedimento_visualizar&acao_retorno=arvore_visualizar&id_procedimento=' . $dblIdProcedimento . '&arvore=1')) . '" tabindex="' . $numTabBotao . '" class="botaoSEI">';
@@ -429,7 +429,7 @@ class PENIntegracao extends SeiIntegracao
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS):
               $title = "Pedido de sincronização realizado em " . $objAtividadeDTO->getDthAbertura();
-              $arrayIcone = ['<img src="' . $this->getDiretorioImagens() . '/sincronizar_sucesso.png" title="'.$title.'" />'];
+              $arrayIcone = ['<img src="' . $this->getDiretorioImagens() . '/sincronizar_processo_pendente.png" title="'.$title.'" />'];
                 break;
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
@@ -658,7 +658,7 @@ class PENIntegracao extends SeiIntegracao
       $objArvoreAcaoItemAPI->setId('MD_SINC_PROCESSO_' . $dblIdProcedimento);
       $objArvoreAcaoItemAPI->setIdPai($dblIdProcedimento);
       $objArvoreAcaoItemAPI->setTitle('Pedido de sincronização realizado em ' . $dthSincronizacao);
-      $objArvoreAcaoItemAPI->setIcone($this->getDiretorioImagens() . '/sincronizar_sucesso.png');
+      $objArvoreAcaoItemAPI->setIcone($this->getDiretorioImagens() . '/sincronizar_processo_pendente.png');
 
       $objArvoreAcaoItemAPI->setTarget(null);
       $objArvoreAcaoItemAPI->setHref('javascript:alert(\'Um trâmite para esse processo foi sincronizado\');');
