@@ -186,6 +186,8 @@ try {
             'controlador.php?acao=pen_unidades_administrativas_externas_selecionar_expedir_procedimento'
             . '&tipo_pesquisa=1&id_object=objLupaUnidadesAdministrativas&idRepositorioEstrutura=1'
         );
+
+        $podeEnvioMultiplosOrgaos = ConfiguracaoModPEN::getInstance()->getValor("PEN", "EnvioMultiplosOrgaos", []);
         break;
     default:
         throw new InfraException("Módulo do Tramita: Ação '" . $_GET['acao'] . "' não reconhecida.");
@@ -364,6 +366,13 @@ $objPaginaSEI->montarJavaScript();
 
     objAutoCompletarEstrutura.processarResultado = function(id, descricao, complemento) {
       window.infraAvisoCancelar();
+      $('#divSinMultiplosOrgaos').css('display', 'none');
+      if (id!=''){
+          $arrIdsMultiplosOrgaos = ('<?php echo implode(',', $podeEnvioMultiplosOrgaos); ?>').split(',');
+          if ($arrIdsMultiplosOrgaos.indexOf(id) !== -1) {
+            $('#divSinMultiplosOrgaos').css('display', 'block');
+          }
+      }
     };
 
     $('#btnIdUnidade').click(function() {
@@ -500,7 +509,10 @@ $objPaginaSEI->abrirBody($strTitulo, 'onload="infraEfeitoTabelas(); inicializar(
     <input type="hidden" id="hdnIdUnidade" name="hdnIdUnidade" class="infraText" value="<?php echo $hdnIdUnidade; ?>" />
   </div>
 
-  <div id="divSinMultiplosOrgaos" class="infraDivCheckbox" style="padding-top: 20px;">
+  <?php
+    $displayNone = in_array($hdnIdUnidade, $podeEnvioMultiplosOrgaos) ? '' : 'display: none;';
+  ?>
+  <div id="divSinMultiplosOrgaos" class="infraDivCheckbox" style="padding-top: 20px; <?php echo $displayNone; ?>">
     <input type="checkbox" id="sinMultiplosOrgaos" name="sinMultiplosOrgaos" class="infraCheckbox" tabindex="<?php echo PaginaSEI::getInstance()->getProxTabDados() ?>" <?php echo $sinMultiplosOrgaos === 'S' ? 'checked' : '' ?> />
     <label id="lblSinMultiplosOrgaos" for="sinMultiplosOrgaos" class="infraLabelCheckbox">
       Manter o processo aberto na unidade selecionada?
