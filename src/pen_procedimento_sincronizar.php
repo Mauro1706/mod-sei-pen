@@ -12,6 +12,7 @@ try {
     SessaoSEI::getInstance()->validarLink();
 
     $objPaginaSEI = PaginaSEI::getInstance();
+    $objSessaoSEI = SessaoSEI::getInstance();
 
     $sincronizado = filter_var($_GET['sincronizado'], FILTER_SANITIZE_NUMBER_INT);
     $idProcedimento = filter_var($_GET['id_procedimento'], FILTER_SANITIZE_NUMBER_INT);
@@ -28,14 +29,25 @@ try {
   }
 
   if (is_null($sincronizado) || $sincronizado == '') {
+    $objSincronizacaoExpedirProcedimentoRN = new SincronizacaoExpedirProcedimentoRN();
+    $objSincronizacaoExpedirProcedimentoRN->validarSincronizacaoProcessoSigiloso($idProcedimento);
+    
     $objProcessoEletronicoDTO = new ProcessoEletronicoDTO();
     $objProcessoEletronicoDTO->setDblIdProcedimento($idProcedimento);
     $objTramiteBD = new TramiteBD(BancoSEI::getInstance());
 
     $objTramiteDTO = $objTramiteBD->consultarPrimeiroTramite($objProcessoEletronicoDTO, ProcessoEletronicoRN::$STA_TIPO_TRAMITE_RECEBIMENTO);
     if ($objTramiteDTO) {
-      $objProcessoEletronicoRN = new ProcessoEletronicoRN();
       $numNRE = $objTramiteDTO->getStrNumeroRegistro();
+
+      $objExpedirProcedimentoRN = new ExpedirProcedimentoRN();
+      $objProcedimentoDTO = $objExpedirProcedimentoRN->consultarProcedimento($idProcedimento);
+
+      $objProcessoEletronicoRN = new ProcessoEletronicoRN();
+      $tramitePendencia = $objProcessoEletronicoRN->consultarTramites(null, null, null, null, $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado());
+      if (count($tramitePendencia) == 0) {
+        throw new InfraException('Ainda não e possível solicitar a sincronização para esse processo. É necessário realizar o envio do processo para outro órgão primeiro.');
+      }
 
       $objProcessoEletronicoRN->validarProcessoRecusaCancelamento($idProcedimento);
       $tramitePendencia = $objProcessoEletronicoRN->consultarTramites(null, $numNRE, null, null, null, null, ProcessoEletronicoRN::$STA_SITUACAO_TRAMITE_SOLICITACAO_PENDENCIA);
@@ -59,26 +71,41 @@ try {
           $objAtividadeRN->concluirRN0726([$objAtividadeDTO]);
         }
 
-        $objExpedirProcedimentoRN = new ExpedirProcedimentoRN();
-        $objProcedimentoDTO = $objExpedirProcedimentoRN->consultarProcedimento($idProcedimento);
-
         $objProcessoEletronicoRN->gravarAtividadeMuiltiplosOrgaos($objProcedimentoDTO, $objTramiteDTO->getNumIdTramite(), ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MANUAL_MULTIPLOS_ORGAOS);
 
         $objProcessoEletronicoRN->solicitarSincronizarTramite($objTramiteDTO->getNumIdTramite());
+      } else {
+        // Já existe uma pendência de sincronização para esse processo. Aguarde a finalização da sincronização.
       }
-    } 
+    }
 
-    header('Location: ' . SessaoSEI::getInstance()->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem=' . $_GET['acao'] .'&arvore=1&sincronizado=1' . $strParametros . PaginaSEI::getInstance()->montarAncora($idProcedimento)));
+    $objPaginaSEI->setStrMensagem('Solicitação de sincronização realizada com sucesso.', InfraPagina::$TIPO_MSG_AVISO);
+    header('Location: '.$objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem='.$_GET['acao'].'&arvore='.$_GET['arvore'].'&sincronizado=1'.$objPaginaSEI->montarAncora($idProcedimento).$strParametros));
     exit(0);
+
   } else {
-    echo 'A sincronização do processo foi solicitada com sucesso.';
+    $mensagem = $objPaginaSEI->getStrMensagens();
+    if ($mensagem !== '') {
+      $objPaginaSEI->setStrMensagem('');
+      ?>
+      <script type="text/javascript">
+        alert('<?php echo $mensagem ?>');
+        parent.parent.location.reload();
+      </script>
+      <?php
+    }
+    // echo 'A sincronização do processo foi solicitada com sucesso.';
     exit(0);
   }
   
 } catch (InfraException $e) {
-    echo 'Erro: ' . $e->getMessage();
+  $objPaginaSEI->setStrMensagem($e->getMessage(), InfraPagina::$TIPO_MSG_AVISO);
+  header('Location: '.$objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem='.$_GET['acao'].'&arvore='.$_GET['arvore'].'&sincronizado=1'.$objPaginaSEI->montarAncora($idProcedimento).$strParametros));
+  exit(0);
 } catch (Exception $e) {
-    echo 'Erro: ' . $e->getMessage();
+  $objPaginaSEI->setStrMensagem($e->getMessage(), InfraPagina::$TIPO_MSG_AVISO);
+  header('Location: '.$objSessaoSEI->assinarLink('controlador.php?acao=pen_procedimento_sincronizar&acao_origem='.$_GET['acao'].'&arvore='.$_GET['arvore'].'&sincronizado=1'.$objPaginaSEI->montarAncora($idProcedimento).$strParametros));
+  exit(0);
 }
 
 ?>

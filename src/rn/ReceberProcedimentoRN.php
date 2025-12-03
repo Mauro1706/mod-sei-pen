@@ -2239,7 +2239,50 @@ class ReceberProcedimentoRN extends InfraRN
             //Procedimento anexado será aquele contido na lista de documentos do processo principal
             $objEntradaAnexarProcessoAPI->setIdProcedimentoAnexado($objProtocolo->idProcedimentoSEI);
             $objEntradaAnexarProcessoAPI->setProtocoloProcedimentoAnexado($objProtocolo->protocolo);
-            $this->objSeiRN->anexarProcesso($objEntradaAnexarProcessoAPI);
+
+            //Busca a unidade em ao qual o processo foi anteriormente expedido
+            //Esta unidade deverá ser considerada para posterior desbloqueio do processo e reabertura
+            $numIdUnidade = ProcessoEletronicoRN::obterUnidadeParaRegistroDocumento($parDblIdProcedimento);
+            SessaoSEI::getInstance()->setNumIdUnidadeAtual($numIdUnidade);
+
+            try {
+              $objAtividadeDTO = new AtividadeDTO();
+              $objAtividadeDTO->retDthConclusao();
+              $objAtividadeDTO->setDblIdProtocolo($parObjProtocolo->idProcedimentoSEI);
+              $objAtividadeDTO->setNumIdUnidade($numIdUnidade);
+
+              $objAtividadeRN = new AtividadeRN();
+              $arrObjAtividadeDTO = $objAtividadeRN->listarRN0036($objAtividadeDTO);
+              $flgReabrir = true;
+
+              foreach ($arrObjAtividadeDTO as $objAtividadeDTO) {
+                if ($objAtividadeDTO->getDthConclusao() == null) {
+                  $flgReabrir = false;
+                }
+              }
+
+              $objProcedimentoDTO = new ProcedimentoDTO();
+              $objProcedimentoDTO->setDblIdProcedimento($parObjProtocolo->idProcedimentoSEI);
+              $objProcedimentoDTO->retTodos();
+              $objProcedimentoDTO->retStrProtocoloProcedimentoFormatado();
+
+              $objProcedimentoRN = new ProcedimentoRN();
+              $objProcedimentoDTO = $objProcedimentoRN->consultarRN0201($objProcedimentoDTO);
+
+              if ($flgReabrir) {
+                $objEntradaReabrirProcessoAPI = new EntradaReabrirProcessoAPI();
+                $objEntradaReabrirProcessoAPI->setIdProcedimento($parObjProtocolo->idProcedimentoSEI);
+                $this->objSeiRN->reabrirProcesso($objEntradaReabrirProcessoAPI);
+              }
+
+              $this->objSeiRN->anexarProcesso($objEntradaAnexarProcessoAPI);
+
+              $numUnidadeReceptora = ModPenUtilsRN::obterUnidadeRecebimento();
+              $this->enviarProcedimentoUnidade($objProcedimentoDTO, $numUnidadeReceptora);
+            } finally {
+              $numUnidadeReceptora = ModPenUtilsRN::obterUnidadeRecebimento();
+              SessaoSEI::getInstance()->setNumIdUnidadeAtual($numUnidadeReceptora);
+            }
           }
         }
 
@@ -3061,6 +3104,7 @@ class ReceberProcedimentoRN extends InfraRN
       $arrDblIdDocumentosProcesso = $this->objProcessoEletronicoRN->listarAssociacoesDocumentos($parObjProcedimentoDTO->getDblIdProcedimento());
       $objProtocolo = ProcessoEletronicoRN::obterProtocoloDosMetadados($parObjMetadadosProcedimento);
       $arrObjDocumentosMetadados = ProcessoEletronicoRN::obterDocumentosProtocolo($objProtocolo);
+      $arrObjDocumentosMetadados = $this->adicionarIdDocumentoPorComponenteDigital($arrObjDocumentosMetadados);
       
       $this->atualizarOrdenDocumentosRecebidos($parObjProcedimentoDTO, $arrDblIdDocumentosProcesso, $arrObjDocumentosMetadados);
   }
@@ -3104,6 +3148,25 @@ class ReceberProcedimentoRN extends InfraRN
     $objProcedimentoDTO->setArrObjRelProtocoloProtocoloDTO($arrObjRelProtocoloProtocoloDTO);
     
     $this->alterarOrdem($objProcedimentoDTO);
+  }
+
+  protected function adicionarIdDocumentoPorComponenteDigital($arrObjDocumentosMetadados)
+  {
+    foreach ($arrObjDocumentosMetadados as $key => $objDocumentosMetadados) {
+      $objComponenteDigitalDTO = new ComponenteDigitalDTO();
+      $objComponenteDigitalDTO->retTodos();
+      $objComponenteDigitalDTO->setStrHashConteudo($objDocumentosMetadados->componentesDigitais[0]->hash->conteudo);
+      $objComponenteDigitalDTO->setStrNome($objDocumentosMetadados->componentesDigitais[0]->nome);
+      $objComponenteDigitalDTO->setNumMaxRegistrosRetorno(1);
+      $objComponenteDigitalBD = new ComponenteDigitalBD($this->getObjInfraIBanco());
+
+      $objComponenteDigitalDTO = $objComponenteDigitalBD->consultar($objComponenteDigitalDTO);
+      if ($objComponenteDigitalDTO) {
+        $arrObjDocumentosMetadados[$key]->idProtocoloSEI = $objComponenteDigitalDTO->getDblIdDocumento();
+      }
+    }
+
+    return $arrObjDocumentosMetadados;
   }
 
   protected function alterarOrdem(ProcedimentoDTO $objProcedimentoDTO) {
