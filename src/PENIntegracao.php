@@ -434,7 +434,7 @@ class PENIntegracao extends SeiIntegracao
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS_RECEBIDO):
-              $dataAbertura = $objAtividadeDTO->isSetDthConclusao() ? $objAtividadeDTO->getDthConclusao() : $objAtividadeDTO->getDthAbertura();
+              $dataAbertura = $objAtividadeDTO->getDthConclusao() !== null ? $objAtividadeDTO->getDthConclusao() : $objAtividadeDTO->getDthAbertura();
               $title = "Sincronizado com sucesso em " . $dataAbertura;
               $arrayIcone = ['<img src="' . $this->getDiretorioImagens() . '/sincronizar_sucesso.png" title="'.$title.'" />'];
                 break;
@@ -601,7 +601,7 @@ class PENIntegracao extends SeiIntegracao
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_AUTO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_ENVIO_MULTIPLOS_ORGAOS):
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PEDIDO_SINC_MULTIPLOS_ORGAOS_RECEBIDO):
-              $dataAbertura = $objAtividadeDTO->isSetDthConclusao() ? $objAtividadeDTO->getDthConclusao() : $objAtividadeDTO->getDthAbertura();
+              $dataAbertura = $objAtividadeDTO->getDthConclusao() !== null ? $objAtividadeDTO->getDthConclusao() : $objAtividadeDTO->getDthAbertura();
               $arrObjArvoreAcaoItemAPI[] = $this->getObjArvoreAcaoSincronizadoFinalizado($dblIdProcedimento, $dataAbertura);
                 break;
             case ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_SINC_MULTIPLOS_ORGAOS_CANCELADO):

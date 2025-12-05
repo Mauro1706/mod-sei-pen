@@ -342,33 +342,6 @@ class ExpedirProcedimentoRN extends InfraRN
               if ($objExpedirProcedimentoDTO->getBolSinMultiplosOrgaos()) {
                 $this->objProcessoEletronicoRN->cadastrarAtividadePedidoSincronizacao($objProcedimentoDTO, ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS);
               }
-              try {
-                if ($this->objProcessoEletronicoRN->validarProcessoMultiplosOrgaos($objProcedimentoDTO->getDblIdProcedimento())) {
-                  $idTarefa = ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS_REMETENTE);
-
-                  $objAtividadeDTO = new AtividadeDTO();
-                  $objAtividadeDTO->setDblIdProtocolo($dblIdProcedimento);
-                  $objAtividadeDTO->setDthConclusao(null);
-                  $objAtividadeDTO->setDistinct(true);
-                  $objAtividadeDTO->setNumIdTarefa($idTarefa);
-                  $objAtividadeDTO->setNumMaxRegistrosRetorno(1);
-                  $objAtividadeDTO->retTodos();
-
-                  $objAtividadeRN = new AtividadeRN();
-                  $objAtividadeDTO = $objAtividadeRN->consultarRN0033($objAtividadeDTO);
-
-                  if($objAtividadeDTO) {
-                    $objAtividadeRN = new AtividadeRN();
-                    $objAtividadeRN->concluirRN0726([$objAtividadeDTO]);
-                  }
-
-                  $this->objProcessoEletronicoRN->gravarAtividadeMuiltiplosOrgaos($objProcedimentoDTO, $objTramite->IDT, ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_ENVIO_MULTIPLOS_ORGAOS_REMETENTE);
-                } else {
-                  
-                }
-              } catch (\Exception $e) {
-                $this->gravarLogDebug("Erro ao gravar atividade múltiplos órgãos: $e", 0, true);
-              }
 
               $numTempoTotalRecebimento = round(microtime(true) - $numTempoInicialRecebimento, 2);
               $this->gravarLogDebug("Finalizado o envio de protocolo número " . $objProcedimentoDTO->getStrProtocoloProcedimentoFormatado() . " (Tempo total: {$numTempoTotalRecebimento}s)", 0, true);
