@@ -94,6 +94,20 @@ class PendenciasEnvioTramiteRN extends PendenciasTramiteRN
 
             } catch (\Exception $e) {
               $this->reabrirProcessoSeBloqueado($objProtocoloDTO->getDblIdProtocolo());
+
+              try {
+                $objExpedirProcedimentoRN = new ExpedirProcedimentoRN();
+                $objExpedirProcedimentoRN->registrarInterrupcaoEnvioAutomatico(
+                  $objProtocoloDTO->getDblIdProtocolo(),
+                  $e,
+                  $destinatario->identificacaoDoRepositorioDeEstruturas ?? null,
+                  $destinatario->numeroDeIdentificacaoDaEstrutura ?? null
+                );
+              } catch (\Exception $eRegistro) {
+                $this->gravarAmostraErroLogSEI($eRegistro);
+                $this->gravarLogDebug(InfraException::inspecionar($eRegistro));
+              }
+
               $this->gravarAmostraErroLogSEI($e);
               $this->gravarLogDebug(InfraException::inspecionar($e));
             }

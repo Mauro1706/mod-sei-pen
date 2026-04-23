@@ -201,7 +201,7 @@ class SincronizacaoExpedirProcedimentoRN extends ExpedirProcedimentoRN
       }
     } catch (\Exception $e) {
       $this->gravarLogDebug("Erro processando envio de processo: $e", 0, true);
-      throw new InfraException('Módulo do Tramita: Falha de comunicação com o serviços de integração. Por favor, tente novamente mais tarde.', $e);
+      throw new InfraException('Módulo do Tramita: '. $e->getMessage(), $e);
     } finally {
       if (!is_null($dblIdProcedimento)) {
         $numIdUnidadeSessaoOriginal = SessaoSEI::getInstance()->getNumIdUnidadeAtual();

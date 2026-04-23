@@ -866,6 +866,125 @@ class ExpedirProcedimentoRN extends InfraRN
       ProcessoEletronicoRN::desbloquearProcesso($numIdProcedimento);
   }
 
+  /**
+   * Obtém o motivo da interrupção do envio automático a partir de uma exceção, buscando informações detalhadas em diferentes níveis da hierarquia de exceções
+   * @param \Exception $objException A exceção que causou a interrupção do envio automático
+   * @return string O motivo da interrupção do envio automático, com um limite de 240 caracteres
+   */
+  protected function obterMotivoInterrupcaoEnvio(\Exception $objException)
+    {
+      $strMotivo = '';
+
+    if ($objException instanceof InfraException && method_exists($objException, 'getStrDescricao')) {
+        $strMotivo = trim((string)$objException->getStrDescricao());
+    }
+
+    if ($strMotivo === '') {
+        $strMotivo = trim((string)$objException->getMessage());
+    }
+
+    if ($objException instanceof InfraException && method_exists($objException, 'getObjException')) {
+        $objExceptionOriginal = $objException->getObjException();
+
+      if ($objExceptionOriginal instanceof \Exception) {
+        if ($strMotivo === '') {
+            $strMotivo = trim((string)$objExceptionOriginal->getMessage());
+        }
+
+        if ($objExceptionOriginal->getPrevious() instanceof \Exception && $strMotivo === '') {
+            $strMotivo = trim((string)$objExceptionOriginal->getPrevious()->getMessage());
+        }
+      }
+    }
+
+    if ($strMotivo === '' && $objException->getPrevious() instanceof \Exception) {
+        $strMotivo = trim((string)$objException->getPrevious()->getMessage());
+    }
+
+      $strMotivo = preg_replace('/\s+/', ' ', $strMotivo);
+
+    if ($strMotivo === '') {
+        $strMotivo = 'Falha nao detalhada durante o envio automatico do processo.';
+    }
+
+      return substr($strMotivo, 0, 240);
+  }
+
+  /**
+   * Registra a interrupção do envio automático de um processo, criando uma atividade no histórico do processo com o motivo da interrupção e informações relevantes sobre o destino do envio
+   * @param float $dblIdProtocolo O ID do protocolo do processo que teve o envio automático interrompido
+   * @param \Exception $objException A exceção que causou a interrupção do envio automático
+   * @return void
+   */
+  public function registrarInterrupcaoEnvioAutomatico($dblIdProtocolo, \Exception $objException, $numIdRepositorioDestino = null, $numIdUnidadeDestino = null)
+    {
+    if (empty($dblIdProtocolo)) {
+        return;
+    }
+
+      $strMotivo = $this->obterMotivoInterrupcaoEnvio($objException);
+      $strMensagemLog = "Envio automatico interrompido para o processo $dblIdProtocolo. Motivo: $strMotivo";
+      $strDataHoraAtual = InfraData::getStrDataHoraAtual();
+
+      $objTarefaDTO = new TarefaDTO();
+      $objTarefaDTO->retNumIdTarefa();
+      $objTarefaDTO->retStrSinLancarAndamentoFechado();
+      $objTarefaDTO->setNumIdTarefa(ProcessoEletronicoRN::obterIdTarefaModulo(ProcessoEletronicoRN::$TI_PROCESSO_ELETRONICO_PROCESSO_TRAMITE_RECUSADO));
+
+      $objTarefaRN = new TarefaRN();
+      $objTarefaDTO = $objTarefaRN->consultar($objTarefaDTO);
+
+    if ($objTarefaDTO === null) {
+        LogSEI::getInstance()->gravar($strMensagemLog, InfraLog::$ERRO);
+        $this->gravarLogDebug($strMensagemLog, 2, true);
+        return;
+    }
+
+      $objAtividadeDTO = new AtividadeDTO();
+      $objAtividadeDTO->setDblIdProtocolo($dblIdProtocolo);
+      $objAtividadeDTO->setNumIdUnidade(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+      $objAtividadeDTO->setNumIdUsuario(SessaoSEI::getInstance()->getNumIdUsuario());
+      $objAtividadeDTO->setNumIdUnidadeOrigem(SessaoSEI::getInstance()->getNumIdUnidadeAtual());
+      $objAtividadeDTO->setNumIdUsuarioOrigem(SessaoSEI::getInstance()->getNumIdUsuario());
+      $objAtividadeDTO->setNumIdUsuarioAtribuicao(null);
+      $objAtividadeDTO->setNumIdTarefa($objTarefaDTO->getNumIdTarefa());
+      $objAtividadeDTO->setStrSinInicial('N');
+      $objAtividadeDTO->setDtaPrazo(null);
+      $objAtividadeDTO->setNumIdUsuarioVisualizacao(null);
+      $objAtividadeDTO->setDthAbertura($strDataHoraAtual);
+      $objAtividadeDTO->setNumTipoVisualizacao(AtividadeRN::$TV_VISUALIZADO);
+      $objAtividadeDTO->setNumIdUsuarioConclusao(SessaoSEI::getInstance()->getNumIdUsuario());
+      $objAtividadeDTO->setDthConclusao($strDataHoraAtual);
+
+      $objAtividadeBD = new AtividadeBD($this->getObjInfraIBanco());
+      $objAtividadeDTO = $objAtividadeBD->cadastrar($objAtividadeDTO);
+
+      $objAtributoAndamentoRN = new AtributoAndamentoRN();
+
+      $objAtributoAndamentoDTO = new AtributoAndamentoDTO();
+      $objAtributoAndamentoDTO->setStrNome('MOTIVO');
+      $objAtributoAndamentoDTO->setStrValor($strMotivo);
+      $objAtributoAndamentoDTO->setStrIdOrigem(null);
+      $objAtributoAndamentoDTO->setNumIdAtividade($objAtividadeDTO->getNumIdAtividade());
+      $objAtributoAndamentoRN->cadastrarRN1363($objAtributoAndamentoDTO);
+
+    if (!empty($numIdRepositorioDestino) && !empty($numIdUnidadeDestino)) {
+        $objEstrutura = $this->objProcessoEletronicoRN->consultarEstrutura($numIdRepositorioDestino, $numIdUnidadeDestino, true);
+
+      if (!empty($objEstrutura) && !empty($objEstrutura->nome)) {
+          $objAtributoAndamentoDTO = new AtributoAndamentoDTO();
+          $objAtributoAndamentoDTO->setStrNome('UNIDADE_DESTINO');
+          $objAtributoAndamentoDTO->setStrValor($objEstrutura->nome);
+          $objAtributoAndamentoDTO->setStrIdOrigem($numIdUnidadeDestino);
+          $objAtributoAndamentoDTO->setNumIdAtividade($objAtividadeDTO->getNumIdAtividade());
+          $objAtributoAndamentoRN->cadastrarRN1363($objAtributoAndamentoDTO);
+      }
+    }
+
+      LogSEI::getInstance()->gravar($strMensagemLog, InfraLog::$ERRO);
+      $this->gravarLogDebug($strMensagemLog, 2, true);
+  }
+
   public function registrarAndamentoExpedicaoAbortada($dblIdProtocolo)
     {
       //Seta todos os atributos do histórico de aborto da expedio
